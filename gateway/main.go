@@ -1,17 +1,17 @@
-// Package main 个人移动聚合网关 - 服务端入口。
+// Package main 个人移动聚合网关 - Windows 服务端入口。
 //
-// 启动方式（开发期，在网关后端源码目录下）：
+// 启动方式（开发期，在 gateway 源码目录下）：
 //
-//	cd /d E:\API聚合\网关后端
-//	go mod tidy && go build -o gateway.exe .
-//	gateway.exe -port 8080 -demo
+//	cd gateway
+//	go build -o 聚合网关.exe .
+//	聚合网关.exe -port 8080 -demo
 //
 // 访问：
-//   管理界面（本机 PC 调试）： http://127.0.0.1:8080/admin
-//   健康检查：                http://127.0.0.1:8080/api/health
+//   管理界面（本机）：       http://127.0.0.1:8080/admin
+//   健康检查：              http://127.0.0.1:8080/api/health
+//   手机（连接电脑热点后）： http://<电脑局域网IP>:8080/admin
 //
-// 手机部署：
-//   编译 GOOS=android（后续阶段接入，此处先在 PC 上联调 API 与前端）。
+// 手机为瘦客户端：通过浏览器访问电脑网关，无需安装任何 App。
 package main
 
 import (
@@ -91,9 +91,8 @@ func main() {
 		log.Fatalf("[main] 监听 %s 失败: %v", addr, err)
 	}
 	log.Printf("[main] 个人移动聚合网关 %s 已启动", version)
-	log.Printf("[main] 监听地址: http://0.0.0.0:%d  (局域网访问: http://<手机IP>:%d)", *port, *port)
-	log.Printf("[main] 管理界面: http://127.0.0.1:%d/admin", *port)
-	log.Printf("[main] 仪表盘数据: http://127.0.0.1:%d/api/stats?range=24h", *port)
+	log.Printf("[main] 监听地址: http://0.0.0.0:%d  (本机: http://127.0.0.1:%d/admin)", *port, *port)
+	log.Printf("[main] 局域网访问（手机/其他设备，连接电脑热点后）: http://<电脑局域网IP>:%d/admin", *port)
 
 	srv := &http.Server{
 		Handler:           mux,

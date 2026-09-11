@@ -1,4 +1,4 @@
-// fix_imports.js —— 将源码中 "网关后端/internal/" 替换为 ASCII 模块名 "mobile-gateway/internal/"
+// fix_imports.js —— 将源码中 "网关后端/internal/"（历史中文模块名）替换为 ASCII 模块名 "mobile-gateway/internal/"
 const fs = require('fs');
 const path = require('path');
 

@@ -6,7 +6,7 @@
 //   - 聚合接口 CRUD（对应 PC 端"API 聚合"表单字段）
 //   - 配置导入 / 导出 / 重置（PC 端设置页按钮）
 //
-// 字段命名与前端 UI 完全一致（见 E:\API聚合\win界面设计\mobile-gateway-admin.html）：
+// 字段命名与前端 UI 完全一致（见 E:\API聚合\web\desktop\mobile-gateway-admin.html）：
 //   - route.path / target / proto / model / force / method / timeout / retry / qps / keys / prompt / cache / cache_ttl
 //   - agg.name / path / method / mode / steps[].{name,method,url,extract,jsonpath} / mapping
 //

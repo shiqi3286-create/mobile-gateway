@@ -1,14 +1,14 @@
 # ---- Go 构建产物 / 缓存 ----
-网关后端/mobile-gateway*
-网关后端/*.exe
-网关后端/dist/
+gateway/mobile-gateway*
+gateway/*.exe
+gateway/dist/
 
 # ---- 运行时生成的数据（配置 + 统计快照）----
-网关后端/data/
+gateway/data/
 
 # ---- 我的本地 Go 缓存目录（不该进仓库）----
-网关后端/.gocache/
-网关后端/.gopath/
+gateway/.gocache/
+gateway/.gopath/
 
 # ---- 系统 / 编辑器 ----
 Thumbs.db
@@ -16,13 +16,6 @@ Thumbs.db
 *.swp
 
 # ---- Node 调试脚本临时文件 ----
-网关后端/scripts/*_dbg.js
+gateway/scripts/*_dbg.js
 mobile-gateway-binaries/
 *.zip
-android-app/app/src/main/assets/聚合网关-安卓0.0-arm64
-android-app/app/src/main/assets/gateway-prototype.html
-android-app/.gradle/
-android-app/app/build/
-android-app/gradle/wrapper/gradle-wrapper.jar
-聚合网关-安卓0.0/
-android-app/app/src/main/jniLibs/arm64-v8a/libgateway.so

@@ -22,7 +22,7 @@
 ------------------------
 
 1. PC 端管理界面
-文件：E:\API聚合\win界面设计\mobile-gateway-admin.html
+文件：E:\API聚合\web\desktop\mobile-gateway-admin.html
 
 包含页面：
 - 仪表盘
@@ -34,7 +34,7 @@
 - 关于
 
 2. 手机端界面
-文件：E:\API聚合\手机界面设计\gateway-prototype.html
+文件：E:\API聚合\web\mobile-preview\gateway-prototype.html
 
 包含页面：
 - 首页
@@ -406,7 +406,7 @@ SSE 事件格式：
 四、当前后端目录结构
 --------------------
 
-E:\API聚合\网关后端\
+E:\API聚合\gateway\
 ├─ go.mod
 ├─ main.go
 ├─ internal\
@@ -515,13 +515,13 @@ E:\API聚合\.github\workflows\build.yml
 云端执行内容：
 1. checkout 拉取代码
 2. setup-go 设置 Go 1.24
-3. 进入 网关后端 子目录
+3. 进入 gateway 子目录
 4. 执行 go vet ./...
 5. 执行 go build ./...
 6. 交叉编译：
-   - Windows amd64：聚合网关-安卓0.0-win.exe
-   - Linux amd64：聚合网关-安卓0.0-linux-amd64
-   - Android arm64：聚合网关-安卓0.0-arm64
+   - Windows amd64：聚合网关.exe
+   - Linux amd64：聚合网关-linux-amd64
+   - Android arm64：聚合网关-arm64
 7. 上传 Artifacts
 
 注意：
@@ -564,17 +564,17 @@ https://github.com/shiqi3286-create/mobile-gateway.git
 - 状态：未过期，可下载
 
 最新产物应包含三个文件：
-- 聚合网关-安卓0.0-arm64       (Android arm64 手机部署版)
-- 聚合网关-安卓0.0-win.exe     (Windows amd64 联调版)
-- 聚合网关-安卓0.0-linux-amd64 (Linux amd64 部署版)
+- 聚合网关-arm64       (Android arm64 手机部署版)
+- 聚合网关.exe     (Windows amd64 联调版)
+- 聚合网关-linux-amd64 (Linux amd64 部署版)
 
 本地已确认的解压目录：
 E:\API聚合\聚合网关-安卓0.0
 
 目录内已确认存在：
-- 聚合网关-安卓0.0-arm64
-- 聚合网关-安卓0.0-win.exe
-- 聚合网关-安卓0.0-linux-amd64
+- 聚合网关-arm64
+- 聚合网关.exe
+- 聚合网关-linux-amd64
 
 下载方式：
 进入仓库 Actions 页面 → 打开最新成功运行记录 → 页面底部 Artifacts → 下载聚合网关-安卓0.0 → 解压。
@@ -602,7 +602,7 @@ E:\API聚合\聚合网关-安卓0.0
 已完成的 Windows 联调验证：
 
 1. 启动命令：
-   聚合网关-安卓0.0-win.exe -port 8080 -demo
+   聚合网关.exe -port 8080 -demo
 
 2. GET /api/health：成功。
    返回 code=0、message=ok、running=true、version=v0.9.1。
@@ -631,7 +631,7 @@ E:\API聚合\聚合网关-安卓0.0
 已确定的最终方向：
 跳过中间 UI/API 测试，直接继续制作可安装的 Android APK：
 
-聚合网关-安卓0.0.apk
+聚合网关.apk
 
 最终 APK 计划包含：
 - Android App 外壳
@@ -643,10 +643,10 @@ E:\API聚合\聚合网关-安卓0.0
 - APK 云端编译与 Artifacts 上传
 
 最终目标产物：
-- 聚合网关-安卓0.0.apk
-- 聚合网关-安卓0.0-arm64
-- 聚合网关-安卓0.0-win.exe
-- 聚合网关-安卓0.0-linux-amd64
+- 聚合网关.apk
+- 聚合网关-arm64
+- 聚合网关.exe
+- 聚合网关-linux-amd64
 
 
 九、最终 APK 开发计划与当前实现状态
@@ -670,13 +670,13 @@ App 启动 → 前台服务 → Android 原生库目录中的 libgateway.so →
 Go 网关监听 8080 → /api/health 就绪 → WebView 加载 /admin。
 
 目标文件：
-聚合网关-安卓0.0.apk
+聚合网关.apk
 
 APK 与二进制关系：
-- 聚合网关-安卓0.0.apk：手机可点击安装的最终应用
-- 聚合网关-安卓0.0-arm64：网关核心独立二进制，用于 APK 构建输入或调试
-- 聚合网关-安卓0.0-win.exe：Windows 联调辅助版
-- 聚合网关-安卓0.0-linux-amd64：Linux 辅助部署版
+- 聚合网关.apk：手机可点击安装的最终应用
+- 聚合网关-arm64：网关核心独立二进制，用于 APK 构建输入或调试
+- 聚合网关.exe：Windows 联调辅助版
+- 聚合网关-linux-amd64：Linux 辅助部署版
 
 
 十、Android Permission denied 修复记录
@@ -684,7 +684,7 @@ APK 与二进制关系：
 
 问题表现：
 手机启动网关时报：
-Cannot run program .../files/gateway/聚合网关-安卓0.0-arm64: error=13, Permission denied
+Cannot run program .../files/gateway/聚合网关-arm64: error=13, Permission denied
 
 初始方案：
 - 从 assets 复制中文文件名二进制到 files/gateway/
@@ -723,7 +723,7 @@ Cannot run program .../files/gateway/聚合网关-安卓0.0-arm64: error=13, Per
 1. Build gateway binaries：成功
 2. Build Android APK：成功
 3. Artifacts 出现：聚合网关-安卓0.0-apk
-4. 下载并安装：聚合网关-安卓0.0.apk
+4. 下载并安装：聚合网关.apk
 5. 手机上点击“启动网关”后不再出现 error=13 Permission denied
 6. WebView 能打开 http://127.0.0.1:8080/admin
 
@@ -786,7 +786,7 @@ Cannot run program .../files/gateway/聚合网关-安卓0.0-arm64: error=13, Per
       tar.xz 内权限位保留、解压工具不强制改写权限。
    e) Go 产物平台需确认：当前用 CGO_ENABLED=0 GOOS=android GOARCH=arm64，需验证
       产物在目标手机架构上可直接运行（ELF 64-bit / AArch64 / 正确 ABI）。
-   f) WebView 仅加载静态原型：assets 中放的是手机界面设计/gateway-prototype.html，
+   f) WebView 仅加载静态原型：assets 中放的是web\mobile-preview/gateway-prototype.html，
       是静态前端，未接真实 fetch/SSE；后端正常也不代表页面真实刷新接口。
    g) watchdog 重启竞态：用户启动、服务自动重启、watchdog 重启、用户停止、
       onDestroy 清理需统一状态机与锁，否则可能同时起多个进程 → bind 8080 冲突。

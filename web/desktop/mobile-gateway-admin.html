@@ -294,7 +294,7 @@
     <div style="flex:1"></div>
     <div class="mx-4 mb-2 p-3 rounded-lg border" style="border-color:var(--divider);background:var(--accent-soft)">
       <div class="text-[11px] mb-1" style="color:var(--text-2)">温馨提示</div>
-      <div class="text-[11px]" style="color:var(--text);line-height:1.5">手机运行网关需保持热点连接稳定。请勿在电脑断开热点时发送请求。</div>
+      <div class="text-[11px]" style="color:var(--text);line-height:1.5">电脑运行网关需保持热点连接稳定。请勿在电脑断开热点时发送请求。</div>
     </div>
   </nav>
 
@@ -309,7 +309,7 @@
           <div class="sec-sub">网关运行概况与实时状态</div>
         </div>
         <div class="flex gap-2">
-          <button class="btn btn-secondary" onclick="toast('已复制手机 IP','success')">
+          <button class="btn btn-secondary" onclick="toast('已复制电脑局域网 IP','success')">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 9h9v9H9z"/><path d="M5 15V5h10"/></svg>
             复制地址
           </button>
@@ -385,7 +385,7 @@
           <div class="text-[12px] mt-1" style="color:var(--text-3)">电脑共享 Wi-Fi，手机不耗流量</div>
         </div>
         <div class="card p-5">
-          <div class="mb-3 text-[12px] font-semibold" style="color:var(--text-2)">手机网关地址</div>
+          <div class="mb-3 text-[12px] font-semibold" style="color:var(--text-2)">电脑网关地址</div>
           <div class="flex items-center gap-2">
             <span class="mono text-[16px] font-semibold" style="color:var(--accent)">http://192.168.137.23:8080</span>
           </div>
@@ -406,7 +406,7 @@
         <div class="card p-5 col-span-1">
           <div class="text-[12px] font-semibold mb-4" style="color:var(--text-2)">网络信息</div>
           <div class="space-y-3 text-[13px]">
-            <div class="flex justify-between"><span style="color:var(--text-2)">手机 IP</span><span class="mono font-semibold">192.168.137.23</span></div>
+            <div class="flex justify-between"><span style="color:var(--text-2)">电脑局域网 IP</span><span class="mono font-semibold">192.168.137.23</span></div>
             <div class="flex justify-between"><span style="color:var(--text-2)">监听端口</span><span class="mono font-semibold">8080</span></div>
             <div class="flex justify-between"><span style="color:var(--text-2)">连接设备数</span><span class="font-semibold">3</span></div>
             <div class="flex justify-between"><span style="color:var(--text-2)">移动数据</span><span class="tag tag-green">已关闭</span></div>
@@ -837,7 +837,7 @@
             <span class="tag tag-blue">v0.9.1</span><span class="tag tag-gray">Apache-2.0</span>
           </div>
           <div class="mt-6 p-4 rounded-lg text-left text-[13px] leading-relaxed border" style="border-color:var(--divider);color:var(--text)">
-            <b>项目简介：</b>在 Android 手机上运行的轻量级聚合网关。手机连接电脑开启的移动热点，网关监听 <span class="mono">0.0.0.0:8080</span>，聚合多个本地端口与第三方 API，供电脑局域网内通过浏览器访问管理。当前默认运行于<b>电脑热点模式</b>，手机不消耗移动数据。
+            <b>项目简介：</b>在 Windows 电脑上运行的聚合网关。手机连接电脑开启的移动热点，网关监听 <span class="mono">0.0.0.0:8080</span>，聚合多个本地端口与第三方 API，供电脑局域网内通过浏览器访问管理。当前默认运行于<b>电脑热点模式</b>，手机不消耗移动数据。
             <div class="mt-3 text-[12px]" style="color:var(--text-2)">功能：路径路由 · API 编排聚合 · 实时日志 · 流量统计 · BLE 广播 · API Key 鉴权 · IP 白名单。</div>
           </div>
           <div class="mt-6 flex gap-3 justify-center">
@@ -856,7 +856,7 @@
 <footer class="acrylic fixed bottom-0 left-0 right-0 z-40 border-t" style="height:54px;border-radius:0">
   <div class="flex items-center justify-between px-5 h-full text-[12px]" style="color:var(--text-2)">
     <div class="flex items-center gap-5">
-      <span class="flex items-center gap-1.5"><span class="dot dot-green"></span>手机 IP <b class="mono" style="color:var(--text)">192.168.137.23</b></span>
+      <span class="flex items-center gap-1.5"><span class="dot dot-green"></span>电脑局域网 IP <b class="mono" style="color:var(--text)">192.168.137.23</b></span>
       <span>端口 <b class="mono" style="color:var(--text)">8080</b></span>
       <span>运行时长 <b class="mono" style="color:var(--text)">06:23:41</b></span>
       <span>版本 <b class="mono" style="color:var(--text)">v0.9.1</b></span>

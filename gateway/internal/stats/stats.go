@@ -13,8 +13,8 @@
 //   - 数据源：路由转发模块（proxy）、聚合编排模块（aggregate）、协议转换模块（protocol）
 //     在处理完每个请求后会调用本模块的 RecordXxx 方法上报一条记录。
 //
-// 字段命名与前端 UI 完全一致（见 E:\API聚合\win界面设计\mobile-gateway-admin.html 与
-// E:\API聚合\手机界面设计\gateway-prototype.html），例如 today.total / input / output /
+// 字段命名与前端 UI 完全一致（见 E:\API聚合\web\desktop\mobile-gateway-admin.html 与
+// E:\API聚合\web\mobile-preview\gateway-prototype.html），例如 today.total / input / output /
 // by_provider / real_time.requests 等，前端无需改名即可直接渲染。
 package stats
 

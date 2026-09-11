@@ -1,4 +1,4 @@
-name: 聚合网关-安卓0.0
+name: 聚合网关 Windows 构建
 
 on:
   push:
@@ -7,96 +7,42 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    name: Build gateway binaries
+  build-gateway:
+    name: Build gateway (Windows)
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: 网关后端
+        working-directory: gateway
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.24'
           cache: false
+
       - name: Vet and build
         run: |
           go vet ./...
           go build ./...
-      - name: Cross-compile gateway binaries
+
+      - name: Cross-compile gateway (Windows amd64)
         run: |
           mkdir -p dist
-          CGO_ENABLED=0 GOOS=android GOARCH=arm64 go build -trimpath -ldflags "-s -w" -o dist/聚合网关-安卓0.0-arm64 .
-          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o dist/聚合网关-安卓0.0-win.exe .
-          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o dist/聚合网关-安卓0.0-linux-amd64 .
-      - name: Upload gateway binaries
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o dist/聚合网关.exe .
+
+      - name: Upload gateway binary
         uses: actions/upload-artifact@v4
         with:
-          name: 聚合网关-安卓0.0
-          path: 网关后端/dist/
-      - name: Release tagged binaries
+          name: 聚合网关
+          path: gateway/dist/聚合网关.exe
+
+      - name: Release tagged binary
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            网关后端/dist/聚合网关-安卓0.0-arm64
-            网关后端/dist/聚合网关-安卓0.0-win.exe
-            网关后端/dist/聚合网关-安卓0.0-linux-amd64
+          files: gateway/dist/聚合网关.exe
           generate_release_notes: true
-
-  build-android-apk:
-    name: Build Android APK
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Java 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-      - name: Install Android SDK packages
-        run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
-      - name: Download gateway binaries
-        uses: actions/download-artifact@v4
-        with:
-          name: 聚合网关-安卓0.0
-          path: downloaded-gateway
-      - name: Stage Android assets
-        shell: bash
-        run: |
-          mkdir -p android-app/app/src/main/assets android-app/app/src/main/jniLibs/arm64-v8a
-          cp "手机界面设计/gateway-prototype.html" android-app/app/src/main/assets/gateway-prototype.html
-          # 将 Android ELF 伪装为原生库，使系统解包到 nativeLibraryDir 并保留可执行权限。
-          cp "downloaded-gateway/聚合网关-安卓0.0-arm64" android-app/app/src/main/jniLibs/arm64-v8a/libgateway.so
-          chmod 755 android-app/app/src/main/jniLibs/arm64-v8a/libgateway.so
-      - name: Install Gradle and generate wrapper
-        shell: bash
-        run: |
-          curl -fsSL https://services.gradle.org/distributions/gradle-8.10.2-bin.zip -o /tmp/gradle.zip
-          unzip -q /tmp/gradle.zip -d /tmp
-          /tmp/gradle-8.10.2/bin/gradle -p android-app wrapper --gradle-version 8.10.2 --distribution-type bin
-          chmod +x android-app/gradlew
-      - name: Verify gateway native library staged
-        shell: bash
-        run: |
-          LIB="android-app/app/src/main/jniLibs/arm64-v8a/libgateway.so"
-          ls -la "$LIB"
-          file "$LIB" || true
-          test -s "$LIB" || { echo "ERROR: libgateway.so is empty or missing"; exit 1; }
-      - name: Build debug APK
-        working-directory: android-app
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
-      - name: Rename APK
-        shell: bash
-        run: cp android-app/app/build/outputs/apk/debug/app-debug.apk android-app/app/build/outputs/apk/debug/聚合网关-安卓0.0.apk
-      - name: Upload Android APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: 聚合网关-安卓0.0-apk
-          path: android-app/app/build/outputs/apk/debug/聚合网关-安卓0.0.apk

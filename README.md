@@ -1,15 +1,18 @@
-# 个人移动聚合网关 · 后端
+# 个人移动聚合网关 · Windows 网关
 
-Android 个人移动聚合网关的 Go 服务端（第一阶段：仪表盘 `GET /api/stats` 闭环）。
+以 **Windows 电脑**为网关服务器，聚合多个本地端口、第三方 API 与 AI 模型服务到统一端口
+和统一管理 API。手机为**瘦客户端**：连接电脑热点后，用浏览器访问电脑网关即可，无需安装 App。
 
 ## 目录结构
 
 ```
 E:\API聚合\
-├─ .github\workflows\build.yml   GitHub Actions 云端编译（无需本地安装 Go）
-├─ win界面设计\                    PC 端管理界面（UI 设计，前端原型）
-├─ 手机界面设计\                   手机端界面（UI 设计，前端原型）
-└─ 网关后端\                       Go 后端源码（本模块）
+├─ .github\workflows\build.yml   GitHub Actions 云端编译（仅 Windows）
+├─ web\
+│  ├─ desktop\mobile-gateway-admin.html   电脑端管理界面（正式 UI，唯一管理入口）
+│  └─ mobile-preview\gateway-prototype.html 手机端浏览器样式预览（非网关，瘦客户端展示用）
+├─ docs\聚合开发.txt               开发进度与决策记录
+└─ gateway\                        Go 后端源码（本模块）
    ├─ main.go                     入口：装配 + 启动 HTTP 服务
    ├─ go.mod                      Go module（mobile-gateway）
    ├─ scripts\                    本地辅助脚本（静态校验，非编译）
@@ -27,13 +30,11 @@ E:\API聚合\
 本项目设计为**不依赖本地 Go 工具链**，编译统一交给 **GitHub Actions 云端**完成。
 你在本地只做「写代码 → 推送到 GitHub → Actions 自动编译 → 下载 exe」。
 
-本仓库提供两个本地辅助脚本（用 Node.js 运行，node 已内置）：
-```bash
-cd 网关后端
-node scripts/verify_go.js        # 静态检查：模块名/导入路径/括号平衡（不编译）
-```
+已完成文档化迁移（提交记录中保留惊喜）：
+- 放弃 Android APK 方案（`android-app/` 已从工作树移除）。
+- 仅保留 Windows amd64 单目标产物（`聚合网关.exe`）。
 
-## 已实现的接口（第一闭环：仪表盘）
+## 已实现的接口（第一阶段：仪表盘）
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
@@ -54,13 +55,16 @@ node scripts/verify_go.js        # 静态检查：模块名/导入路径/括号�
 ## 本地运行（可选，需自行装 Go）
 
 ```bash
-cd 网关后端
-go build -o gateway.exe .
-gateway.exe -port 8080 -demo      # -demo 注入演示数据
-gateway.exe -demo=false           # 关闭演示数据
+cd gateway
+go build -o 聚合网关.exe .
+聚合网关.exe -port 8080 -demo      # -demo 注入演示数据
+聚合网关.exe -demo=false           # 关闭演示数据
 ```
-启动后：
-- 管理界面（暂未托管页面）：仅提供 API。浏览器访问 API 接口可看 JSON。
-- 仪表盘数据：`http://127.0.0.1:8080/api/stats?range=24h`
 
-> 当前阶段 `-web` 参数为空，不托管前端 HTML；后续把 `win界面设计` 复制为静态目录即可。
+启动后：
+- 管理界面（当前阶段 `-web` 为空时不托管页面）：仅提供 API。
+- 本机访问：`http://127.0.0.1:8080/admin`
+- 手机访问（连接电脑热点后）：`http://<电脑局域网IP>:8080/admin`
+
+> 当前阶段 `-web` 参数为空，不托管前端 HTML；后续把 `web/desktop/mobile-gateway-admin.html`
+> 复制为静态目录即可（或在启动时传入 `-web web/desktop`）。

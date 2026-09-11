@@ -4,7 +4,7 @@
 //   2. import 路径全部以 "mobile-gateway" 开头（本地包）或为标准库
 //   3. go.mod module 名与代码 import 前缀一致
 //   4. 检查常见笔误：残留 "网关后端" 中文字符、未闭合的括号（粗略）
-// 用法：node scripts/verify_go.js （在 E:\API聚合\网关后端 下运行）
+// 用法：node scripts/verify_go.js （在 gateway 目录下运行）
 const fs = require('fs');
 const path = require('path');
 
