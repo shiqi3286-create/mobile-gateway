@@ -15,6 +15,7 @@ import java.net.URL
 class GatewayProcessManager(private val context: Context) {
     companion object {
         private const val BINARY_ASSET = "聚合网关-安卓0.0-arm64"
+        private const val LOCAL_BINARY_NAME = "gateway-arm64"
         private const val HTML_ASSET = "gateway-prototype.html"
         private const val PORT = 8080
     }
@@ -27,13 +28,11 @@ class GatewayProcessManager(private val context: Context) {
         val gatewayDir = File(context.filesDir, "gateway").apply { mkdirs() }
         val webDir = File(context.filesDir, "web").apply { mkdirs() }
         val dataDir = File(context.filesDir, "data").apply { mkdirs() }
-        val binary = File(gatewayDir, BINARY_ASSET)
+        val binary = File(gatewayDir, LOCAL_BINARY_NAME)
 
         copyAssetIfChanged(BINARY_ASSET, binary)
         copyAssetIfChanged(HTML_ASSET, File(webDir, "index.html"))
-        if (!binary.setExecutable(true, true)) {
-            throw IllegalStateException("无法设置网关二进制可执行权限")
-        }
+        makeExecutable(binary)
 
         process = ProcessBuilder(
             binary.absolutePath,
@@ -53,6 +52,20 @@ class GatewayProcessManager(private val context: Context) {
         }.start()
 
         waitUntilReady()
+    }
+
+    private fun makeExecutable(file: File) {
+        // assets 解压出的文件默认没有 x 权限；同时使用 Java API 和 chmod，
+        // 兼容不同 Android 厂商对 app 私有目录执行权限的处理差异。
+        val javaPermission = file.setExecutable(true, false)
+        val chmodExit = ProcessBuilder("chmod", "755", file.absolutePath)
+            .redirectErrorStream(true)
+            .start()
+            .also { it.inputStream.close() }
+            .waitFor()
+        if (!javaPermission && chmodExit != 0) {
+            throw IllegalStateException("无法设置网关二进制可执行权限: ${file.absolutePath}")
+        }
     }
 
     fun stop() {
