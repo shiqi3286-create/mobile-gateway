@@ -600,7 +600,7 @@ func (c *Collector) topAPIsLocked(d *dayAccum, n int) []TopAPI {
 			Path:        path,
 			Requests:    pa.Requests,
 			SuccessRate: rate,
-			AvgMs:       c.avgMsLocked(pa),
+			AvgMs:       float64(c.avgMsLocked(pa)),
 			TrafficMB:   round2(float64(pa.Traffic) / 1024 / 1024),
 		})
 	}

@@ -118,7 +118,7 @@ type ConfigProvider interface {
 
 // LogsProvider 日志接口
 type LogsProvider interface {
-	Query(level, channel, keyword string, page, size int) interface{}
+	Query(levels []string, channel, keyword string, page, size int) interface{}
 	Clear() error
 	ExportText() []byte
 }
