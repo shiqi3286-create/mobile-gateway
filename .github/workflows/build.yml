@@ -1,0 +1,73 @@
+name: Build Gateway (Windows exe)
+
+# 触发条件：
+#   1. push 到 main / master 分支
+#   2. 手动触发（GitHub 仓库 Actions 页面 → "Run workflow" 按钮）
+#   3. 打 tag 时（v*）自动构建发布版
+on:
+  push:
+    branches: [main, master]
+    tags: ['v*']
+  workflow_dispatch:   # 手动触发
+
+jobs:
+  build:
+    runs-on: ubuntu-latest   # 云端 Linux 环境（编译产物是 Windows exe，见 GOOS/GOARCH 设置）
+
+    # 说明：Go 模块放在仓库子目录 网关后端/ 下，
+    # 所有 run 步骤都进入该目录执行，使 go build ./... 能找到 go.mod。
+    defaults:
+      run:
+        working-directory: 网关后端
+
+    steps:
+      # 1) 拉取代码
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2) 设置 Go 版本（与 go.mod 声明的 go 1.21 兼容）
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'          # 稳定版，>= go.mod 要求即可
+          cache: true                 # 缓存 Go module 下载，加速后续构建
+
+      # 3) 编译前环境确认（打印版本，便于排查）
+      - name: Show versions
+        run: |
+          go version
+          go env GOOS GOARCH CGO_ENABLED
+
+      # 4) 执行编译（go vet 静态检查 + go build ./...）
+      #    若代码有编译错误，这里会失败并在 Actions 页面显示红色 ❌
+      - name: Vet & Build
+        run: |
+          go vet ./...
+          go build ./...
+
+      # 5) 产出 Windows amd64 可执行文件（本项目最终运行在 Android 手机，
+      #    但目前阶段先在 PC/服务器上做网关联调。如需 Android ARM64 原生二进制，
+      #    取消下面注释的 android 行即可）
+      - name: Cross-compile binaries
+        run: |
+          mkdir -p dist
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o dist/mobile-gateway.exe .
+          CGO_ENABLED=0 GOOS=linux   GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o dist/mobile-gateway-linux-amd64 .
+          # 可选：Android ARM64（CGO 关闭，仅含标准库；后续作为 App 内嵌二进制）
+          CGO_ENABLED=0 GOOS=android GOARCH=arm64 go build -trimpath -ldflags "-s -w" -o dist/mobile-gateway-android-arm64 .
+
+      # 6) 上传编译产物（Actions 页面 → 本次运行的 Artifacts 区域下载）
+      #    注意：path 相对仓库根目录，所以带 网关后端/ 前缀
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-gateway-binaries
+          path: 网关后端/dist/
+
+      # 7) 若是打了 tag（v*），额外发布一个 GitHub Release，附上 exe
+      - name: Release (tagged only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: 网关后端/dist/mobile-gateway.exe
+          generate_release_notes: true

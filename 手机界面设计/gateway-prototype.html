@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="system">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>个人移动聚合网关 · 原型</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  /* ============ 主题变量 ============ */
+  :root {
+    --primary: #2C5F8A;      /* 深蓝 */
+    --primary-hi: #3E7BB0;
+    --on-primary: #FFFFFF;
+    --bg: #EEF1F5;
+    --surface: #FFFFFF;
+    --surface-2: #F5F7FA;
+    --surface-3: #ECF0F5;
+    --on: #1A1F26;
+    --on-muted: #5A6672;
+    --on-soft: #8A94A0;
+    --line: #E3E8EE;
+    --success: #2E9E6B;
+    --warn: #E0A124;
+    --error: #D9524E;
+    --info: #3E7BB0;
+    --scrim: rgba(15,22,30,.45);
+    --shadow: 0 1px 2px rgba(22,34,48,.06), 0 6px 18px rgba(22,34,48,.08);
+    --shadow-lg: 0 8px 30px rgba(15,22,30,.20);
+    --danger-soft: #FDEAEA;
+    --success-soft: #E7F5EE;
+    --warn-soft: #FBF1DC;
+    --primary-soft: #E8F0F7;
+  }
+  [data-theme="dark"] {
+    --primary: #6FA8DC;
+    --primary-hi: #8BBFE9;
+    --on-primary: #0C2030;
+    --bg: #101418;
+    --surface: #1A1F25;
+    --surface-2: #20262E;
+    --surface-3: #283039;
+    --on: #E8EBEE;
+    --on-muted: #AAB4BE;
+    --on-soft: #77828E;
+    --line: #2C343D;
+    --success: #3FC184;
+    --warn: #E9B549;
+    --error: #E56A66;
+    --info: #7FB2DD;
+    --scrim: rgba(0,0,0,.60);
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.35);
+    --shadow-lg: 0 8px 30px rgba(0,0,0,.55);
+    --danger-soft: #3A2322;
+    --success-soft: #173028;
+    --warn-soft: #372F1B;
+    --primary-soft: #1A2A3A;
+  }
+
+  * { -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--on);
+    transition: background .25s ease, color .25s ease;
+  }
+
+  /* ============ 可复用组件 ============ */
+  .card { background: var(--surface); border-radius: 16px; box-shadow: var(--shadow); border: 1px solid var(--line); }
+  .chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 600;
+    background: var(--surface-2); color: var(--on-muted); border: 1px solid var(--line);
+    cursor: pointer; min-height: 32px; transition: all .15s ease;
+  }
+  .chip.active { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    min-height: 44px; padding: 0 16px; border-radius: 14px; font-size: 14px; font-weight: 600;
+    transition: all .15s ease; cursor: pointer; border: none; user-select: none;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary { background: var(--primary); color: var(--on-primary); }
+  .btn-tonal { background: var(--primary-soft); color: var(--primary); }
+  .btn-surface { background: var(--surface-2); color: var(--on); border: 1px solid var(--line); }
+  .btn-danger { background: var(--danger-soft); color: var(--error); }
+  .btn-block { width: 100%; }
+
+  /* 开关 */
+  .switch { position: relative; display: inline-block; width: 48px; height: 28px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch .track {
+    position: absolute; inset: 0; border-radius: 999px; background: var(--surface-3);
+    border: 1px solid var(--line); transition: all .2s ease; cursor: pointer;
+  }
+  .switch .track::after {
+    content: ""; position: absolute; top: 2px; left: 2px; width: 22px; height: 22px;
+    border-radius: 999px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: all .2s ease;
+  }
+  .switch input:checked + .track { background: var(--success); border-color: var(--success); }
+  .switch input:checked + .track::after { transform: translateX(20px); }
+
+  /* 底部导航 */
+  .nav-item {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    flex: 1; min-height: 56px; color: var(--on-soft); font-size: 11px; cursor: pointer;
+    border: none; background: transparent; transition: color .15s ease;
+  }
+  .nav-item .ic { width: 24px; height: 24px; }
+  .nav-item.active { color: var(--primary); }
+
+  /* 悬浮按钮 */
+  .fab {
+    position: absolute; z-index: 30; right: 18px; bottom: 188px;
+    width: 58px; height: 58px; border-radius: 20px; display: flex; align-items: center; justify-content: center;
+    background: var(--primary); color: var(--on-primary); box-shadow: var(--shadow-lg);
+    cursor: pointer; transition: all .2s ease; border: none;
+  }
+  .fab:active { transform: scale(.92); }
+  .fab .ic { width: 26px; height: 26px; }
+
+  /* 徽标 / 标签 */
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+
+  .status-dot { width: 10px; height: 10px; border-radius: 999px; flex-shrink: 0; }
+  .dot-success { background: var(--success); box-shadow: 0 0 0 4px var(--success-soft); }
+  .dot-warn { background: var(--warn); box-shadow: 0 0 0 4px var(--warn-soft); }
+  .dot-error { background: var(--error); box-shadow: 0 0 0 4px var(--danger-soft); }
+
+  .page { display: none; }
+  .page.active { display: block; animation: fade .18s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px);} to {opacity:1; transform:none;} }
+
+  .ic { width: 20px; height: 20px; flex-shrink: 0; }
+  .ic svg { display: block; width: 100%; height: 100%; }
+
+  .topbar-btn {
+    width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+    color: var(--on); cursor: pointer; border: none; background: transparent; transition: background .15s;
+  }
+  .topbar-btn:active { background: var(--surface-3); }
+
+  /* 抽屉 */
+  .drawer {
+    position: absolute; top: 0; left: 0; bottom: 0; width: 304px; z-index: 60;
+    background: var(--surface); transform: translateX(-100%); transition: transform .28s cubic-bezier(.2,.8,.2,1);
+    display: flex; flex-direction: column; box-shadow: var(--shadow-lg);
+  }
+  .drawer.open { transform: translateX(0); }
+
+  /* 状态条展开面板 */
+  .status-panel {
+    position: absolute; left: 8px; right: 8px; bottom: 64px; z-index: 45;
+    background: var(--surface); border-radius: 20px; box-shadow: var(--shadow-lg);
+    border: 1px solid var(--line); transform: translateY(140%); visibility: hidden;
+    transition: transform .28s cubic-bezier(.2,.8,.2,1), visibility .28s;
+    overflow: hidden;
+  }
+  .status-panel.open { transform: translateY(0); visibility: visible; }
+
+  /* 半屏遮罩 */
+  .scrim { position: absolute; inset: 0; background: var(--scrim); z-index: 40; opacity: 0; pointer-events: none; transition: opacity .25s; }
+  .scrim.show { opacity: 1; pointer-events: auto; }
+
+  /* 左滑/右滑容器 */
+  .swipe-row { position: relative; overflow: hidden; border-radius: 16px; }
+  .swipe-bg { position: absolute; inset: 0; display: flex; justify-content: space-between; align-items: center; padding: 0 6px; pointer-events: none; }
+  .swipe-bg .s-action { min-height: 44px; padding: 0 18px; display: flex; align-items: center; color:#fff; font-size:12px; font-weight:700; gap:6px; }
+  .swipe-content { position: relative; z-index: 2; background: var(--surface); transition: transform .22s ease; }
+  .swipe-content.deleted { transform: translateX(-96px); opacity:.4; }
+
+  /* 多选模式 */
+  body.multi .card, body.multi .route-card { cursor: pointer; }
+  .sel-radio {
+    width: 22px; height: 22px; border-radius: 999px; border: 2px solid var(--line);
+    display: flex; align-items: center; justify-content: center; transition: all .15s; flex-shrink: 0;
+  }
+  .sel-radio.on { border-color: var(--primary); background: var(--primary); color: var(--on-primary); }
+  .sel-radio .ic { width: 14px; height: 14px; }
+
+  /* 日志级别 */
+  .lv-info { background: var(--primary-soft); color: var(--info); }
+  .lv-warn { background: var(--warn-soft); color: var(--warn); }
+  .lv-error { background: var(--danger-soft); color: var(--error); }
+
+  .stat-ripple { height: 5px; border-radius: 999px; background: var(--surface-3); overflow: hidden; }
+  .stat-ripple > div { height: 100%; border-radius: 999px; }
+
+  input.search, select.search {
+    width: 100%; min-height: 44px; border-radius: 14px; border: 1px solid var(--line);
+    background: var(--surface-2); padding: 0 40px 0 14px; color: var(--on); font-size: 14px; outline: none;
+  }
+  input.search:focus, select.search:focus { border-color: var(--primary); background: var(--surface); }
+  .field {
+    width: 100%; min-height: 44px; border-radius: 12px; border: 1px solid var(--line);
+    background: var(--surface-2); padding: 0 12px; color: var(--on); font-size: 14px; outline: none;
+  }
+  .field:focus { border-color: var(--primary); background: var(--surface); }
+  .seg { display: flex; background: var(--surface-2); border-radius: 12px; padding: 3px; border:1px solid var(--line); }
+  .seg > button { flex:1; min-height: 38px; border-radius: 9px; border:none; background: transparent; color:var(--on-muted); font-weight:600; font-size:13px; cursor:pointer; }
+  .seg > button.active { background: var(--surface); color: var(--primary); box-shadow: var(--shadow); }
+
+  .toast {
+    position: absolute; left: 50%; transform: translateX(-50%) translateY(20px);
+    bottom: 118px; z-index: 90; background: var(--on); color: var(--bg);
+    padding: 10px 16px; border-radius: 10px; font-size: 13px; opacity: 0; pointer-events: none;
+    transition: all .25s ease; white-space: nowrap; box-shadow: var(--shadow-lg);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .modal {
+    position: absolute; inset: 0; z-index: 80; display: none; align-items: flex-end; justify-content: center;
+  }
+  .modal .sheet {
+    width: 100%; background: var(--surface); border-radius: 24px 24px 0 0; padding: 18px 18px 24px;
+    transform: translateY(100%); transition: transform .28s cubic-bezier(.2,.8,.2,1); max-height: 88%;
+    overflow-y: auto; padding-bottom: 120px;
+  }
+  .modal.open .sheet { transform: translateY(0); }
+  .modal .sheet-card { background: var(--surface-2); border-radius: 16px; border:1px solid var(--line); }
+
+  /* QR 码 */
+  .qr { display: grid; gap: 2px; padding: 12px; background: #fff; border-radius: 12px; width: 168px; height: 168px; margin: 0 auto; }
+  .qr .cell { background: #1a1a1a; border-radius: 1px; }
+  .qr .cell.blank { background: transparent; }
+
+  .scrollbar-none::-webkit-scrollbar { display: none; }
+  .hairline-t { border-top: 1px solid var(--line); }
+  .tw-cursor { display:inline-block; width:2px; height:1em; background:var(--primary); vertical-align:-2px; animation:twblink 1s steps(1) infinite; }
+  @keyframes twblink { 50% { opacity:0; } }
+</style>
+</head>
+<body class="flex items-center justify-center min-h-screen overflow-hidden">
+
+<!-- ============ 手机壳 ============ -->
+<div id="phone" class="relative flex flex-col overflow-hidden" style="width:390px;height:844px;max-height:calc(100vh - 16px);border-radius:40px;background:var(--bg);box-shadow:0 24px 80px rgba(0,0,0,.35);border:10px solid #14181d;">
+
+  <!-- 状态栏 -->
+  <div class="relative z-40 flex items-center justify-between px-6 pt-2 pb-1" style="height:34px;flex-shrink:0;">
+    <span class="text-[13px] font-semibold">10:24</span>
+    <span class="flex items-center gap-1">
+      <i class="ic" data-icon="signal"></i>
+      <i class="ic" data-icon="wifi"></i>
+      <i class="ic" data-icon="battery"></i>
+    </span>
+  </div>
+
+  <!-- 侧滑抽屉 -->
+  <div id="scrim" class="scrim" onclick="closeDrawer()"></div>
+  <aside id="drawer" class="drawer">
+    <div class="p-5 pb-4">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center" style="background:var(--primary);color:var(--on-primary);">
+          <i class="ic !w-7 !h-7" data-icon="gateway"></i>
+        </div>
+        <div>
+          <div class="font-bold text-[15px]">移动聚合网关</div>
+          <div class="text-[12px]" style="color:var(--on-muted)">个人聚合服务器 v1.2.0</div>
+        </div>
+      </div>
+    </div>
+    <div class="px-4 pb-2 font-semibold text-[12px] tracking-wide" style="color:var(--on-soft)">网络模式</div>
+    <div class="px-2">
+      <button class="drawer-row active" onclick="pickMode(this,'电脑热点模式')"><i class="ic" data-icon="wifi"></i><span>电脑热点模式</span><span class="ml-auto check ic !w-5 !h-5" data-icon="check"></span></button>
+      <button class="drawer-row" onclick="pickMode(this,'纯局域网模式')"><i class="ic" data-icon="lan"></i><span>纯局域网模式</span><span class="ml-auto check ic !w-5 !h-5" data-icon="check"></span></button>
+      <button class="drawer-row" onclick="pickMode(this,'蓝牙模式')"><i class="ic" data-icon="bluetooth"></i><span>蓝牙模式</span><span class="ml-auto check ic !w-5 !h-5" data-icon="check"></span></button>
+    </div>
+    <div class="px-4 pb-1 pt-4 font-semibold text-[12px] tracking-wide" style="color:var(--on-soft)">通用</div>
+    <div class="px-2">
+      <div class="drawer-row" onclick="showToast('蓝牙功能切换')"><i class="ic" data-icon="bluetooth"></i><span>蓝牙开关</span>
+        <label class="ml-auto switch" onclick="event.stopPropagation()"><input type="checkbox" checked><span class="track"></span></label>
+      </div>
+      <button class="drawer-row" onclick="importExport()"><i class="ic" data-icon="swap"></i><span>导入 / 导出</span></button>
+      <div class="drawer-row" onclick="cycleTheme()"><i class="ic" data-icon="theme"></i><span>主题</span>
+        <span id="themeLabel" class="ml-auto text-[12px]" style="color:var(--on-soft)">跟随系统</span>
+      </div>
+      <button class="drawer-row" onclick="closeDrawer();showModal('about')"><i class="ic" data-icon="info"></i><span>关于</span></button>
+    </div>
+    <div class="mt-auto p-5">
+      <div class="card p-4">
+        <div class="text-[12px]" style="color:var(--on-muted)">运行状态</div>
+        <div class="flex items-center gap-2 mt-1"><span class="status-dot dot-success"></span><span class="font-bold">运行中</span></div>
+        <div class="text-[12px] mt-1" style="color:var(--on-muted)">192.168.137.23:8080</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- 状态条展开面板 -->
+  <div class="scrim" id="statusScrim" onclick="toggleStatusPanel(false)"></div>
+  <div id="statusPanel" class="status-panel">
+    <div class="flex items-center justify-between px-5 pt-4 pb-2">
+      <span class="font-bold text-[16px]">网关状态</span>
+      <button class="topbar-btn !w-9 !h-9" onclick="toggleStatusPanel(false)"><i class="ic" data-icon="close"></i></button>
+    </div>
+    <div class="px-5">
+      <!-- 大启停按钮 -->
+      <div class="flex items-center justify-between rounded-2xl p-4" style="background:var(--success-soft);border:1px solid var(--line);">
+        <div>
+          <div class="text-[12px]" style="color:var(--on-muted)">网关</div>
+          <div class="text-[20px] font-extrabold flex items-center gap-2"><span class="status-dot dot-success"></span>运行中</div>
+        </div>
+        <button id="bigPower" class="btn btn-primary" onclick="toggleGateway(this)"><i class="ic" data-icon="stop"></i><span>停止</span></button>
+      </div>
+      <!-- 模式切换 -->
+      <button class="flex items-center justify-between w-full mt-3 rounded-2xl px-4 py-3 card" onclick="openDrawer()">
+        <div class="flex items-center gap-3"><i class="ic" data-icon="wifi"></i><div><div class="text-[14px] font-semibold">电脑热点模式</div><div class="text-[12px]" style="color:var(--on-muted)">点击切换</div></div></div>
+        <i class="ic" data-icon="chevron-right"></i>
+      </button>
+      <!-- 访问地址 -->
+      <div class="mt-3 card rounded-2xl px-4 py-3">
+        <div class="flex items-center justify-between">
+          <span class="text-[12px]" style="color:var(--on-muted)">访问地址</span>
+          <span class="flex gap-1">
+            <button class="topbar-btn !w-9 !h-9" onclick="copyAddr()"><i class="ic" data-icon="copy"></i></button>
+            <button class="topbar-btn !w-9 !h-9" onclick="showQr()"><i class="ic" data-icon="qr"></i></button>
+          </span>
+        </div>
+        <div class="font-mono text-[16px] font-semibold mt-1">http://192.168.137.23:8080</div>
+        <div class="flex gap-2 mt-2">
+          <div class="flex-1 rounded-xl px-3 py-2 text-[12px]" style="background:var(--surface-2)"><span style="color:var(--on-soft)">连接设备</span><div class="font-bold text-[15px]">3 台</div></div>
+          <div class="flex-1 rounded-xl px-3 py-2 text-[12px]" style="background:var(--surface-2)"><span style="color:var(--on-soft)">今日请求</span><div class="font-bold text-[15px]">1,234</div></div>
+          <div class="flex-1 rounded-xl px-3 py-2 text-[12px]" style="background:var(--surface-2)"><span style="color:var(--on-soft)">流量</span><div class="font-bold text-[15px]">36 MB</div></div>
+        </div>
+      </div>
+      <!-- 最近日志 -->
+      <div class="mt-3 card rounded-2xl overflow-hidden">
+        <div class="px-4 py-3 text-[13px] font-bold">最近日志</div>
+        <div id="miniLogs"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 主区域 -->
+  <div id="main" class="relative flex-1 flex flex-col overflow-hidden">
+
+    <!-- 顶栏 -->
+    <header id="topbar" class="flex items-center justify-between px-3 pt-1 pb-1 flex-shrink-0" style="min-height:52px;">
+      <button class="topbar-btn -ml-2" onclick="openDrawer()"><i class="ic !w-6 !h-6" data-icon="menu"></i></button>
+      <h1 id="pageTitle" class="text-[17px] font-bold">首页</h1>
+      <div class="flex">
+        <button class="topbar-btn" onclick="showToast('搜索')"><i class="ic" data-icon="search"></i></button>
+        <button class="topbar-btn" onclick="showToast('更多菜单')"><i class="ic" data-icon="more"></i></button>
+      </div>
+    </header>
+
+    <!-- 内容滚动区 -->
+    <main id="content" class="flex-1 overflow-y-auto scrollbar-none px-4 pb-24" onscroll="">
+
+      <!-- ============ 首页 ============ -->
+      <section id="page-home" class="page active" data-title="首页">
+        <!-- Token 消耗统计（横向滑动卡片） -->
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[13px] font-bold">Token 消耗 · 今日</span>
+          <span class="text-[11px]" style="color:var(--on-soft)">左右滑动查看</span>
+        </div>
+        <div id="tokenStats" class="flex gap-3 overflow-x-auto scrollbar-none -mx-4 px-4 pb-1"></div>
+
+        <!-- 大状态卡 -->
+        <div class="card p-5">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-[13px]" style="color:var(--on-muted)">网关状态</div>
+              <div class="text-[24px] font-extrabold flex items-center gap-2 mt-1"><span class="status-dot dot-success"></span>运行中</div>
+              <div class="text-[12px] mt-1 flex items-center gap-2" style="color:var(--on-muted)">
+                <span class="badge lv-info">电脑热点</span>
+                <span>已运行 2 小时 15 分</span>
+              </div>
+            </div>
+            <button id="homePower" class="btn btn-primary" onclick="toggleGateway(this)"><i class="ic" data-icon="stop"></i><span>停止</span></button>
+          </div>
+        </div>
+
+        <!-- 访问地址卡 -->
+        <div class="card p-4 mt-3">
+          <div class="flex items-center justify-between">
+            <span class="text-[13px] font-semibold">访问地址</span>
+            <span class="flex gap-1">
+              <button class="topbar-btn !w-9 !h-9" onclick="copyAddr()"><i class="ic" data-icon="copy"></i></button>
+              <button class="topbar-btn !w-9 !h-9" onclick="showQr()"><i class="ic" data-icon="qr"></i></button>
+            </span>
+          </div>
+          <button class="mt-2 w-full text-left font-mono text-[17px] font-semibold rounded-xl px-3 py-2" style="background:var(--surface-2)" onclick="copyAddr()">
+            http://192.168.137.23:8080
+          </button>
+          <div class="text-[12px] mt-1" style="color:var(--on-soft)">同网段设备扫码或输入地址即可访问</div>
+        </div>
+
+        <!-- 网络模式卡 -->
+        <div class="card p-4 mt-3 flex items-center gap-3 cursor-pointer" onclick="openDrawer()">
+          <div class="w-11 h-11 rounded-2xl flex items-center justify-center" style="background:var(--primary-soft);color:var(--primary)"><i class="ic !w-6 !h-6" data-icon="wifi"></i></div>
+          <div class="flex-1">
+            <div class="text-[14px] font-semibold">电脑热点模式</div>
+            <div class="text-[12px]" style="color:var(--on-muted)">电脑连 Wi-Fi 开热点，不耗手机流量</div>
+          </div>
+          <i class="ic" data-icon="chevron-right"></i>
+        </div>
+
+        <!-- 统计 -->
+        <div class="grid grid-cols-3 gap-3 mt-3">
+          <div class="card p-3 text-center"><div class="text-[20px] font-extrabold">1,234</div><div class="text-[11px] mt-0.5" style="color:var(--on-muted)">今日请求</div></div>
+          <div class="card p-3 text-center"><div class="text-[20px] font-extrabold" style="color:var(--success)">99.2%</div><div class="text-[11px] mt-0.5" style="color:var(--on-muted)">成功率</div></div>
+          <div class="card p-3 text-center"><div class="text-[20px] font-extrabold">38ms</div><div class="text-[11px] mt-0.5" style="color:var(--on-muted)">平均延迟</div></div>
+        </div>
+
+        <!-- 请求量趋势 -->
+        <div class="card p-4 mt-3">
+          <div class="flex items-center justify-between"><span class="text-[13px] font-semibold">今日请求趋势</span><span class="text-[12px]" style="color:var(--on-muted)">近 24 小时</span></div>
+          <div class="flex items-end gap-2 h-20 mt-3" id="spark"></div>
+        </div>
+
+        <!-- 最近日志 -->
+        <div class="card mt-3 overflow-hidden">
+          <div class="flex items-center justify-between px-4 py-3">
+            <span class="text-[13px] font-bold">最近日志</span>
+            <button class="text-[12px] font-semibold flex items-center gap-1" style="color:var(--primary)" onclick="switchTab(3)">查看全部 <i class="ic !w-4 !h-4" data-icon="chevron-right"></i></button>
+          </div>
+          <div id="homeLogs"></div>
+        </div>
+      </section>
+
+      <!-- ============ 路由 ============ -->
+      <section id="page-routes" class="page" data-title="路由">
+        <div class="flex gap-2">
+          <div class="relative flex-1">
+            <i class="ic absolute left-3 top-1/2 -translate-y-1/2" style="color:var(--on-soft)" data-icon="search"></i>
+            <input class="search !pl-9" placeholder="搜索路径或目标地址" oninput="filterRoutes()">
+          </div>
+          <button class="topbar-btn !bg-[var(--surface-2)]" onclick="showToast('筛选')"><i class="ic" data-icon="filter"></i></button>
+        </div>
+        <div class="flex gap-2 mt-3">
+          <button class="chip active" data-filter="all" onclick="routeFilter(this,'all')">全部</button>
+          <button class="chip" data-filter="on" onclick="routeFilter(this,'on')">启用</button>
+          <button class="chip" data-filter="off" onclick="routeFilter(this,'off')">禁用</button>
+        </div>
+
+        <div id="routeList" class="mt-3 flex flex-col gap-3"></div>
+
+        <!-- 空状态 -->
+        <div id="routeEmpty" class="card p-8 mt-3 text-center hidden">
+          <div class="mx-auto w-20 h-20 rounded-full flex items-center justify-center" style="background:var(--primary-soft);color:var(--primary)"><i class="ic !w-10 !h-10" data-icon="route"></i></div>
+          <div class="font-bold mt-4">还没有路由</div>
+          <div class="text-[13px] mt-1" style="color:var(--on-muted)">添加第一条路由，开始转发请求</div>
+          <button class="btn btn-primary mt-4" onclick="showRouteForm(null)"><i class="ic" data-icon="plus"></i>新建路由</button>
+        </div>
+
+        <!-- 多选操作条 -->
+        <div id="multiBar" class="hidden fixed-bottom-bar">
+          <span id="multiCount" class="text-[13px] font-semibold" style="color:var(--on-muted)">已选 0 项</span>
+          <div class="flex gap-2">
+            <button class="btn btn-surface !px-3" onclick="multiAction('启用')"><i class="ic" data-icon="check"></i>启用</button>
+            <button class="btn btn-surface !px-3" onclick="multiAction('禁用')"><i class="ic" data-icon="pause"></i>禁用</button>
+            <button class="btn btn-danger !px-3" onclick="multiAction('删除')"><i class="ic" data-icon="trash"></i>删除</button>
+            <button class="btn btn-surface !px-3" onclick="exitMulti()"><i class="ic" data-icon="close"></i></button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 聚合 ============ -->
+      <section id="page-agg" class="page" data-title="聚合">
+        <div class="flex gap-2">
+          <div class="relative flex-1">
+            <i class="ic absolute left-3 top-1/2 -translate-y-1/2" style="color:var(--on-soft)" data-icon="search"></i>
+            <input class="search !pl-9" placeholder="搜索聚合 API">
+          </div>
+          <button class="topbar-btn !bg-[var(--surface-2)]" onclick="showToast('筛选')"><i class="ic" data-icon="filter"></i></button>
+        </div>
+        <div class="flex gap-2 mt-3">
+          <button class="chip active" onclick="aggFilter(this,'all')">全部</button>
+          <button class="chip" onclick="aggFilter(this,'on')">运行中</button>
+          <button class="chip" onclick="aggFilter(this,'off')">已停止</button>
+        </div>
+
+        <div id="aggList" class="mt-3 flex flex-col gap-3"></div>
+
+        <div id="aggEmpty" class="card p-8 mt-3 text-center hidden">
+          <div class="mx-auto w-20 h-20 rounded-full flex items-center justify-center" style="background:var(--primary-soft);color:var(--primary)"><i class="ic !w-10 !h-10" data-icon="merge"></i></div>
+          <div class="font-bold mt-4">还没有聚合 API</div>
+          <div class="text-[13px] mt-1" style="color:var(--on-muted)">编排多个接口为一个聚合调用</div>
+          <button class="btn btn-primary mt-4" onclick="showToast('新建聚合')"><i class="ic" data-icon="plus"></i>新建聚合</button>
+        </div>
+      </section>
+
+      <!-- ============ 日志 ============ -->
+      <section id="page-logs" class="page" data-title="日志">
+        <div class="flex gap-2">
+          <div class="relative flex-1">
+            <i class="ic absolute left-3 top-1/2 -translate-y-1/2" style="color:var(--on-soft)" data-icon="search"></i>
+            <input class="search !pl-9" placeholder="搜索方法 / 路径">
+          </div>
+          <button class="topbar-btn !bg-[var(--surface-2)]" onclick="showToast('筛选')"><i class="ic" data-icon="filter"></i></button>
+        </div>
+        <div class="flex gap-2 mt-3">
+          <select class="search !w-auto flex-1" onchange="filterLogs()">
+            <option value="all">全部级别</option><option value="INFO">INFO</option><option value="WARN">WARN</option><option value="ERROR">ERROR</option>
+          </select>
+          <select class="search !w-auto flex-1" onchange="filterLogs()">
+            <option value="all">全部通道</option><option value="lan">局域网</option><option value="bt">蓝牙</option>
+          </select>
+        </div>
+        <div id="logList" class="mt-3 flex flex-col gap-2"></div>
+        <div id="logEmpty" class="text-center text-[13px] py-8" style="color:var(--on-soft)">没有匹配的日志</div>
+
+        <div class="sticky bottom-0 flex gap-2 mt-4 pb-1">
+          <button class="btn btn-surface flex-1" onclick="showToast('已暂停滚动')"><i class="ic" data-icon="pause"></i>暂停滚动</button>
+          <button class="btn btn-surface flex-1" onclick="clearLogs()"><i class="ic" data-icon="trash"></i>清空</button>
+          <button class="btn btn-primary flex-1" onclick="showToast('已导出日志')"><i class="ic" data-icon="download"></i>导出</button>
+        </div>
+      </section>
+
+      <!-- ============ 设置 ============ -->
+      <section id="page-settings" class="page" data-title="设置">
+        <div class="space-y-3">
+          <!-- 网络 -->
+          <div class="card p-4">
+            <div class="font-bold text-[14px] flex items-center gap-2"><i class="ic" data-icon="network"></i>网络</div>
+            <div class="space-y-4 mt-3">
+              <div>
+                <div class="text-[13px] mb-1" style="color:var(--on-muted)">监听端口</div>
+                <input class="field font-mono" value="8080">
+              </div>
+              <div class="flex items-center justify-between py-1"><span class="text-[14px]">HTTPS</span><label class="switch"><input type="checkbox"><span class="track"></span></label></div>
+              <div class="flex items-center justify-between py-1"><span class="text-[14px]">mDNS 广播</span><label class="switch"><input type="checkbox" checked><span class="track"></span></label></div>
+            </div>
+          </div>
+          <!-- 安全 -->
+          <div class="card p-4">
+            <div class="font-bold text-[14px] flex items-center gap-2"><i class="ic" data-icon="shield"></i>安全</div>
+            <div class="space-y-3 mt-3">
+              <div><div class="text-[13px] mb-1" style="color:var(--on-muted)">API Key</div><input class="field font-mono" value="sk-gw-••••••••4f2a"></div>
+              <div><div class="text-[13px] mb-1" style="color:var(--on-muted)">IP 白名单</div><input class="field font-mono" value="192.168.137.*, 127.0.0.1"></div>
+              <div class="flex items-center justify-between py-1"><span class="text-[14px]">要求认证</span><label class="switch"><input type="checkbox" checked><span class="track"></span></label></div>
+            </div>
+          </div>
+          <!-- 蓝牙 -->
+          <div class="card p-4">
+            <div class="font-bold text-[14px] flex items-center gap-2"><i class="ic" data-icon="bluetooth"></i>蓝牙</div>
+            <div class="space-y-3 mt-3">
+              <div class="flex items-center justify-between py-1"><span class="text-[14px]">启用蓝牙网关</span><label class="switch"><input type="checkbox"><span class="track"></span></label></div>
+              <div><div class="text-[13px] mb-1" style="color:var(--on-muted)">服务 UUID</div><input class="field font-mono" value="0000-2f1a-..."></div>
+              <div><div class="text-[13px] mb-1" style="color:var(--on-muted)">加密方式</div><select class="field"><option>配对绑定 + 加密</option><option>仅配对</option><option>无加密</option></select></div>
+            </div>
+          </div>
+          <!-- 保活 -->
+          <div class="card p-4">
+            <div class="font-bold text-[14px] flex items-center gap-2"><i class="ic" data-icon="battery"></i>保活</div>
+            <div class="space-y-1 mt-3">
+              <div class="flex items-center justify-between py-1"><span class="text-[14px]">前台服务</span><label class="switch"><input type="checkbox" checked><span class="track"></span></label></div>
+              <div class="flex items-center justify-between py-1"><span class="text-[14px]">电池白名单</span><label class="switch"><input type="checkbox" checked><span class="track"></span></label></div>
+              <div class="flex items-center justify-between py-1"><span class="text-[14px]">开机自启</span><label class="switch"><input type="checkbox"><span class="track"></span></label></div>
+            </div>
+          </div>
+          <!-- 热点模式 -->
+          <div class="card p-4">
+            <div class="font-bold text-[14px] flex items-center gap-2"><i class="ic" data-icon="wifi"></i>热点模式</div>
+            <div class="space-y-1 mt-3">
+              <div class="flex items-center justify-between py-1"><span class="text-[14px]">自动检测热点</span><label class="switch"><input type="checkbox" checked><span class="track"></span></label></div>
+              <div class="flex items-center justify-between py-1"><span class="text-[14px]">关闭移动数据提醒</span><label class="switch"><input type="checkbox"><span class="track"></span></label></div>
+            </div>
+          </div>
+          <!-- 配置 -->
+          <div class="card p-4">
+            <div class="font-bold text-[14px] flex items-center gap-2"><i class="ic" data-icon="settings"></i>配置</div>
+            <div class="flex gap-2 mt-3">
+              <button class="btn btn-surface flex-1" onclick="importExport()"><i class="ic" data-icon="download"></i>导入</button>
+              <button class="btn btn-surface flex-1" onclick="showToast('已导出配置')"><i class="ic" data-icon="upload"></i>导出</button>
+            </div>
+            <button class="btn btn-danger btn-block mt-3" onclick="confirmReset()"><i class="ic" data-icon="trash"></i>恢复默认设置</button>
+          </div>
+          <!-- 关于 -->
+          <button class="card p-4 w-full flex items-center gap-3 text-left" onclick="showModal('about')">
+            <div class="w-11 h-11 rounded-2xl flex items-center justify-center" style="background:var(--primary);color:var(--on-primary)"><i class="ic !w-6 !h-6" data-icon="gateway"></i></div>
+            <div class="flex-1"><div class="text-[14px] font-semibold">关于 移动聚合网关</div><div class="text-[12px]" style="color:var(--on-muted)">v1.2.0 · 查看信息</div></div>
+            <i class="ic" data-icon="chevron-right"></i>
+          </button>
+        </div>
+        <button class="btn btn-primary btn-block mt-4 mb-2" onclick="showToast('设置已保存')"><i class="ic" data-icon="check"></i>保存设置</button>
+      </section>
+    </main>
+
+    <!-- 全屏聚合测试页 -->
+    <div id="testPage" class="absolute inset-0 flex-col" style="display:none;z-index:75;background:var(--bg)">
+      <div class="flex items-center gap-1 px-3 pt-2 pb-1 flex-shrink-0" style="min-height:52px">
+        <button class="topbar-btn" onclick="closeTestPage()"><i class="ic !w-6 !h-6" data-icon="chevronLeft"></i></button>
+        <div class="flex-1">
+          <div class="text-[16px] font-bold">聚合测试</div>
+          <div class="text-[11px] font-mono" style="color:var(--on-muted)">GET /api/user/order · 2 步并行</div>
+        </div>
+        <span id="twBadge" class="badge lv-info">准备中</span>
+      </div>
+      <div class="flex-1 overflow-y-auto scrollbar-none px-4 pb-3">
+        <div class="card p-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[12px] font-bold">流式响应</span>
+            <span class="text-[11px]" style="color:var(--on-soft)">跨平台 · OpenAI 格式输出</span>
+          </div>
+          <div class="font-mono text-[13px] leading-6 whitespace-pre-wrap" style="min-height:190px"><span id="twText"></span><span id="twCursor" class="tw-cursor"></span></div>
+        </div>
+        <div class="card p-4 mt-3">
+          <div class="text-[12px] font-bold mb-2">步骤状态</div>
+          <div id="twSteps" class="space-y-2"></div>
+        </div>
+      </div>
+      <div class="flex-shrink-0 card mx-3 mb-3 p-4" style="box-shadow:var(--shadow-lg)">
+        <div class="flex items-center justify-between text-[12px]"><span style="color:var(--on-muted)">Token 消耗（累计）</span><span class="font-mono font-bold" id="twCost">$0.0000</span></div>
+        <div class="grid grid-cols-3 gap-2 mt-2 text-center">
+          <div class="rounded-xl py-2" style="background:var(--surface-2)"><div class="text-[14px] font-bold font-mono" id="twIn">0</div><div class="text-[10px]" style="color:var(--on-soft)">输入 tokens</div></div>
+          <div class="rounded-xl py-2" style="background:var(--surface-2)"><div class="text-[14px] font-bold font-mono" id="twOut">0</div><div class="text-[10px]" style="color:var(--on-soft)">输出 tokens</div></div>
+          <div class="rounded-xl py-2" style="background:var(--surface-2)"><div class="text-[14px] font-bold font-mono" id="twTotal">0</div><div class="text-[10px]" style="color:var(--on-soft)">总计</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 常驻网关状态条（收起态） -->
+    <button id="statusStrip" class="flex-shrink-0 flex items-center gap-3 w-full text-left"
+      style="padding:12px 16px;background:var(--surface);border-top:1px solid var(--line);border-bottom:1px solid var(--line);"
+      onclick="toggleStatusPanel()">
+      <span class="status-dot dot-success"></span>
+      <span class="flex-1 min-w-0">
+        <span class="block text-[13px] font-semibold leading-tight">运行中 · 电脑热点模式</span>
+        <span class="block text-[11px] truncate leading-tight" style="color:var(--on-muted)">192.168.137.23:8080</span>
+      </span>
+      <label class="switch" onclick="event.stopPropagation()"><input type="checkbox" checked><span class="track" onclick="event.stopPropagation();toggleStripPower(event)"></span></label>
+      <i class="ic" data-icon="chevron-up"></i>
+    </button>
+
+    <!-- 底部导航 -->
+    <nav class="flex-shrink-0 flex items-stretch" style="background:var(--surface);border-top:1px solid var(--line);padding:4px 0 8px;">
+      <button class="nav-item active" data-tab="home" onclick="switchTab(0)"><i class="ic" data-icon="home"></i><span>首页</span></button>
+      <button class="nav-item" data-tab="routes" onclick="switchTab(1)"><i class="ic" data-icon="route"></i><span>路由</span></button>
+      <button class="nav-item" data-tab="agg" onclick="switchTab(2)"><i class="ic" data-icon="merge"></i><span>聚合</span></button>
+      <button class="nav-item" data-tab="logs" onclick="switchTab(3)"><i class="ic" data-icon="logs"></i><span>日志</span></button>
+      <button class="nav-item" data-tab="settings" onclick="switchTab(4)"><i class="ic" data-icon="settings"></i><span>设置</span></button>
+    </nav>
+  </div>
+
+  <!-- 悬浮 + 按钮 -->
+  <button id="fab" class="fab" onclick="fabAction()"><i class="ic !w-7 !h-7" data-icon="plus"></i></button>
+
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+
+  <!-- 模态容器 -->
+  <div id="modalWrap" class="modal" onclick="closeModal(event)">
+    <div id="modalSheet" class="sheet"></div>
+  </div>
+
+  <style>.drawer-row{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;padding:0 12px;border-radius:12px;background:transparent;border:none;color:var(--on);font-size:14px;cursor:pointer;text-align:left}
+  .drawer-row:active{background:var(--surface-3)}
+  .drawer-row.active{background:var(--primary-soft);color:var(--primary);font-weight:600}
+  .drawer-row .check{display:none}
+  .drawer-row.active .check{display:block}
+  .fixed-bottom-bar{position:absolute;left:8px;right:8px;bottom:210px;z-index:35;background:var(--surface);border-radius:16px;box-shadow:var(--shadow-lg);border:1px solid var(--line);padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .fixed-bottom-bar.hidden{display:none !important}
+  .log-row{display:flex;align-items:flex-start;gap:10px;padding:12px;border-radius:14px;background:var(--surface);border:1px solid var(--line);cursor:pointer}
+  .route-swipe{position:relative;overflow:hidden;border-radius:16px}
+  .route-swipe .bg{position:absolute;inset:0;display:flex;justify-content:space-between;pointer-events:none}
+  .route-swipe .bg div{min-width:64px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:12px}
+  .route-swipe .fg{position:relative;z-index:2;background:var(--surface);transition:transform .2s}
+  .spark-bar{width:100%;border-radius:4px;background:var(--primary-soft)}
+  @media (prefers-color-scheme:dark){ [data-theme="system"]{ }} /* placeholder */</style>
+</div>
+
+<script>
+/* ==================== 图标库 ==================== */
+const ICONS = {
+  home:'<path d="M4 10.5 12 3l8 7.5V20a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z"/>',
+  route:'<circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 18h7a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h7"/>',
+  merge:'<path d="M12 3v9m0 0-4-4m4 4 4-4"/><path d="M12 12c-4 1-6 3-6 6m6-6c4 1 6 3 6 6"/>',
+  logs:'<path d="M4 6h16M4 12h16M4 18h10"/>',
+  settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-2.7-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H4a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.1-2.7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 2.7-1.1V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.1 2.7z"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+  more:'<circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  copy:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>',
+  qr:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14h1M14 20h1M18 20h3v-3"/>',
+  refresh:'<path d="M20 12a8 8 0 1 1-2.3-5.7M20 3v4h-4"/>',
+  chevronDown:'<path d="m6 9 6 6 6-6"/>',
+  chevronUp:'<path d="m6 15 6-6 6 6"/>',
+  chevronRight:'<path d="m9 6 6 6-6 6"/>',
+  chevronLeft:'<path d="m15 6-6 6 6 6"/>',
+  power:'<path d="M12 3v9"/><path d="M18.4 6.6a8 8 0 1 1-12.8 0"/>',
+  stop:'<rect x="6" y="6" width="12" height="12" rx="2"/>',
+  play:'<path d="M8 5v14l11-7z"/>',
+  pause:'<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>',
+  bluetooth:'<path d="m7 7 10 10-5 4V3l5 4L7 17"/>',
+  wifi:'<path d="M2 9a15 15 0 0 1 20 0M5.5 12.5a10 10 0 0 1 13 0M9 16a5 5 0 0 1 6 0"/><circle cx="12" cy="19" r="1.2"/>',
+  lan:'<path d="M12 3v6m0 0L8 12h8l-4-3zM6 14v3m12-3v3M4 17h4m8 0h4M8 20h8"/>',
+  download:'<path d="M12 3v11m0 0 4-4m-4 4-4-4M4 20h16"/>',
+  upload:'<path d="M12 16V5m0 0-4 4m4-4 4 4M4 20h16"/>',
+  swap:'<path d="M7 4 4 7l3 3M4 7h14M17 20l3-3-3-3M20 17H6"/>',
+  moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  theme:'<circle cx="12" cy="12" r="4"/><path d="M12 2h2a10 10 0 0 1 0 20h-2a10 10 0 0 1 0-20z" opacity="0"/>',
+  info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="8" r="1"/>',
+  close:'<path d="M6 6l12 12M18 6 6 18"/>',
+  trash:'<path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/>',
+  edit:'<path d="M4 20h4l11-11a2 2 0 0 0-3-3L5 17v3zM13.5 6.5l3 3"/>',
+  check:'<path d="m4 12.5 5 5L20 6.5"/>',
+  shield:'<path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6z"/><path d="M9 12l2 2 4-4"/>',
+  key:'<circle cx="8" cy="15" r="4"/><path d="m11 12 8-8M15 8l2 2M17 6l2 2"/>',
+  network:'<circle cx="12" cy="6" r="3"/><circle cx="6" cy="17" r="2.5"/><circle cx="18" cy="17" r="2.5"/><path d="M12 9v6m0 0-4 2.5M12 15l4 2.5"/>',
+  battery:'<rect x="3" y="8" width="16" height="8" rx="2"/><path d="M22 11v2"/>',
+  signal:'<path d="M5 20v-3M10 20v-6M15 20v-9M20 20V8"/>',
+  menu:'<path d="M4 7h16M4 12h16M4 17h16"/>',
+  filter:'<path d="M4 5h16l-6 7v6l-4 2v-8z"/>',
+  drag:'<circle cx="9" cy="6" r="1.2"/><circle cx="9" cy="12" r="1.2"/><circle cx="9" cy="18" r="1.2"/><circle cx="15" cy="6" r="1.2"/><circle cx="15" cy="12" r="1.2"/><circle cx="15" cy="18" r="1.2"/>',
+  send:'<path d="M4 12 20 4l-6 16-3-6z"/>',
+  gateway:'<path d="M4 12a8 8 0 0 1 16 0M8 12a4 4 0 0 1 8 0"/><circle cx="12" cy="12" r="1.3"/>',
+  warn:'<path d="M12 3 2 20h20zM12 9v5M12 17.5v.5"/>',
+  copyDown:'<path d="M12 12V3m0 0 4 4m-4-4L8 7M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/>'
+};
+function injectIcons(){
+  document.querySelectorAll('.ic').forEach(el=>{
+    const n=el.getAttribute('data-icon');
+    if(n && ICONS[n]) el.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[n]}</svg>`;
+  });
+}
+
+/* ==================== 数据 ==================== */
+/* 协议字典：pull=是否支持自动拉取模型 */
+const PROTOCOLS = {
+  openai:    {name:'OpenAI 兼容',   short:'OpenAI', pull:true,  models:['gpt-4o','gpt-4o-mini','o3-mini','gpt-4.1']},
+  anthropic: {name:'Anthropic',     short:'Claude', pull:false, models:['claude-sonnet-4-20250514','claude-opus-4-20250514','claude-3-5-haiku-20241022']},
+  gemini:    {name:'Google Gemini', short:'Gemini', pull:true,  models:['gemini-2.5-pro','gemini-2.5-flash','gemini-2.0-flash']},
+  custom:    {name:'自定义',         short:'自定义',  pull:true,  models:[]}
+};
+const PLATFORM_PRESETS = [
+  {name:'OpenAI',     proto:'openai',    target:'https://api.openai.com/v1'},
+  {name:'Claude',     proto:'anthropic', target:'https://api.anthropic.com'},
+  {name:'Gemini',     proto:'gemini',    target:'https://generativelanguage.googleapis.com'},
+  {name:'自定义平台',  proto:'custom',    target:''}
+];
+const MODEL_DICT = [...new Set(Object.values(PROTOCOLS).flatMap(p=>p.models))];
+const ROUTE_STATE = { ok:['适配成功','dot-success'], nopull:['内置模型列表','dot-warn'], fail:['适配失败','dot-error'] };
+const ROUTES = [
+  {id:1, path:'/user/*',      target:'http://127.0.0.1:9001',                    proto:'openai',    force:true,  model:'gpt-4o-mini', keys:2, state:'ok',     on:true},
+  {id:2, path:'/order/*',     target:'http://127.0.0.1:9002',                    proto:'openai',    force:true,  model:'gpt-4o-mini', keys:1, state:'ok',     on:true},
+  {id:3, path:'/ai/claude/*', target:'https://api.anthropic.com',                proto:'anthropic', force:true,  model:'claude-sonnet-4-20250514', keys:2, state:'nopull', on:true},
+  {id:4, path:'/ai/gemini/*', target:'https://generativelanguage.googleapis.com', proto:'gemini',    force:false, model:'gemini-2.5-flash', keys:1, state:'ok', on:true},
+  {id:5, path:'/ai/local/*',  target:'http://127.0.0.1:11434',                   proto:'custom',    force:true,  model:'',            keys:1, state:'fail',   on:false}
+];
+const AGG = [
+  {id:1, name:'用户订单聚合', path:'/api/user/order', method:'GET', steps:2, time:'72ms', rate:'99.2%', mode:'并行', on:true,
+   stepList:[
+     {name:'调用用户服务', api:'GET /user/{id}',  proto:'OpenAI 兼容', extract:'通用文本提取'},
+     {name:'调用订单服务', api:'GET /order/list', proto:'Anthropic',   extract:'自定义 JSONPath'}
+   ]},
+  {id:2, name:'商品库存汇总', path:'/api/product/stock', method:'GET', steps:3, time:'95ms', rate:'98.6%', mode:'串行', on:true,
+   stepList:[
+     {name:'拉取商品列表', api:'GET /product/list',    proto:'OpenAI 兼容',   extract:'通用文本提取'},
+     {name:'汇总库存',     api:'GET /inventory/{sku}', proto:'Google Gemini', extract:'通用文本提取'},
+     {name:'生成库存摘要', api:'POST /v1/chat',        proto:'OpenAI 兼容',   extract:'通用文本提取'}
+   ]},
+  {id:3, name:'订单售后编排', path:'/api/order/after-sale', method:'POST', steps:4, time:'120ms', rate:'97.4%', mode:'串行', on:false,
+   stepList:[
+     {name:'校验订单',   api:'GET /order/{id}',   proto:'OpenAI 兼容', extract:'通用文本提取'},
+     {name:'风控检查',   api:'POST /risk/check',  proto:'自定义',      extract:'自定义 JSONPath'},
+     {name:'创建工单',   api:'POST /ticket',      proto:'OpenAI 兼容', extract:'通用文本提取'},
+     {name:'通知用户',   api:'POST /notify',      proto:'OpenAI 兼容', extract:'通用文本提取'}
+   ]}
+];
+const LOGS = [
+  {time:'2025-01-01 10:00:00', lv:'INFO', method:'GET', path:'/api/user/order', code:200, ms:45, chan:'局域网', detail:{req:'GET /api/user/order HTTP/1.1\nHost: 192.168.137.23:8080\nAuthorization: Bearer sk-gw-***', resp:'200 OK · 98B · 45ms\n{"code":0,"data":{"order":{}}}'}},
+  {time:'2025-01-01 09:58:12', lv:'INFO', method:'GET', path:'/user/*/profile', code:200, ms:28, chan:'局域网', detail:{req:'GET /user/1001/profile', resp:'200 OK · 34B · 28ms'}},
+  {time:'2025-01-01 09:55:40', lv:'WARN', method:'POST', path:'/order/*/pay', code:503, ms:1200, chan:'局域网', detail:{req:'POST /order/2034/pay', resp:'503 · 上游超时 · 1200ms'}},
+  {time:'2025-01-01 09:52:03', lv:'INFO', method:'GET', path:'/api/product/stock', code:200, ms:95, chan:'局域网', detail:{req:'GET /api/product/stock', resp:'200 OK · 212B · 95ms'}},
+  {time:'2025-01-01 09:48:31', lv:'ERROR', method:'GET', path:'/api/user/order', code:500, ms:18, chan:'局域网', detail:{req:'GET /api/user/order', resp:'500 · 内部错误 · 18ms'}},
+  {time:'2025-01-01 09:45:11', lv:'INFO', method:'GET', path:'/order/*/list', code:200, ms:61, chan:'蓝牙', detail:{req:'GET /order/1001/list', resp:'200 OK · 156B · 61ms'}}
+];
+
+/* ==================== 渲染工具 ==================== */
+function ic(name,cls=''){return `<i class="ic ${cls}" data-icon="${name}"></i>`;}
+function lvClass(lv){return lv==='ERROR'?'lv-error':lv==='WARN'?'lv-warn':'lv-info';}
+
+function renderHomeLogs(){
+  document.getElementById('homeLogs').innerHTML = LOGS.slice(0,4).map(l=>
+    `<button class="log-row w-full !rounded-none !border-x-0 !border-b last:!border-b-0" onclick="switchTab(3)">
+       <span class="badge ${lvClass(l.lv)}" style="min-width:48px;justify-content:center">${l.lv}</span>
+       <span class="flex-1 min-w-0">
+         <span class="block text-[13px] truncate"><b>${l.method}</b> ${l.path}</span>
+         <span class="block text-[11px]" style="color:var(--on-muted)">${l.time}</span>
+       </span>
+       <span class="text-right"><span class="block text-[12px] font-bold ${l.code>=500?'':l.code>=400?'' : 'text-[color:var(--success)]'}" style="${l.code>=400?'color:var(--error)':''}">${l.code}</span><span class="block text-[10px]" style="color:var(--on-soft)">${l.ms}ms</span></span>
+     </button>`).join('');
+}
+function renderMiniLogs(){
+  document.getElementById('miniLogs').innerHTML = LOGS.slice(0,3).map(l=>
+    `<div class="flex items-center gap-2 px-4 py-2" style="border-top:1px solid var(--line)">
+       <span class="badge ${lvClass(l.lv)}" style="min-width:44px;justify-content:center">${l.lv}</span>
+       <span class="flex-1 text-[12px] truncate"><b>${l.method}</b> ${l.path}</span>
+       <span class="text-[11px] font-bold" style="color:var(--on-soft)">${l.code} · ${l.ms}ms</span>
+     </div>`).join('');
+}
+function renderSpark(){
+  const v=[35,55,40,70,52,84,66,92,58,74,86,63];
+  document.getElementById('spark').innerHTML = v.map((h,i)=>`<div class="spark-bar" style="height:${h}%"></div>`).join('');
+}
+
+function renderRoutes(filter='all'){
+  const list = document.getElementById('routeList');
+  const data = ROUTES.filter(r => filter==='all'|| (filter==='on'?r.on:!r.on));
+  document.getElementById('routeEmpty').classList.toggle('hidden', data.length>0);
+  list.innerHTML = data.map(r=>{
+    const P=PROTOCOLS[r.proto], S=ROUTE_STATE[r.state];
+    return `
+    <div class="route-swipe card">
+      <div class="bg">
+        <div style="background:var(--success)">${ic('check','!w-5 !h-5')}${r.on?'禁用':'启用'}</div>
+        <div style="background:var(--error)">${ic('trash','!w-5 !h-5')}删除</div>
+      </div>
+      <div class="fg card p-4" onclick="openRoute(${r.id})">
+        <div class="flex items-center justify-between">
+          <span class="font-mono text-[15px] font-bold truncate">${r.path}</span>
+          <label class="switch ml-2" onclick="event.stopPropagation()"><input type="checkbox" ${r.on?'checked':''} onchange="toggleRoute(${r.id},this)"><span class="track"></span></label>
+        </div>
+        <div class="flex items-center gap-2 mt-2 flex-wrap">
+          <span class="badge" style="background:var(--primary-soft);color:var(--primary)">${P.name}</span>
+          ${r.force?`<span class="badge" style="background:var(--success-soft);color:var(--success)">⇄ 转 OpenAI</span>`:''}
+        </div>
+        <div class="font-mono text-[11px] truncate mt-1.5" style="color:var(--on-muted)">${r.target}</div>
+        <div class="flex items-center gap-2 mt-2 text-[11px]" style="color:var(--on-muted)">
+          <span class="font-mono truncate">${r.model||'未设默认模型'}</span>
+          <span>· ${r.keys} Key</span>
+          <span class="ml-auto flex items-center gap-1"><span class="status-dot ${S[1]}" style="width:7px;height:7px;box-shadow:none"></span>${S[0]}</span>
+        </div>
+      </div>
+    </div>`;}).join('');
+}
+
+function renderAgg(filter='all'){
+  const data = AGG.filter(a => filter==='all'|| (filter==='on'?a.on:!a.on));
+  document.getElementById('aggEmpty').classList.toggle('hidden', data.length>0);
+  document.getElementById('aggList').innerHTML = data.map(a=>`
+    <div class="card p-4" onclick="openAgg(${a.id})">
+      <div class="flex items-center justify-between">
+        <span class="text-[15px] font-bold">${a.name}</span>
+        <label class="switch" onclick="event.stopPropagation()"><input type="checkbox" ${a.on?'checked':''} onchange="toggleAgg(${a.id},this)"><span class="track"></span></label>
+      </div>
+      <div class="flex items-center gap-2 mt-2">
+        <span class="badge lv-info">${a.method}</span>
+        <span class="font-mono text-[13px]" style="color:var(--on-muted)">${a.path}</span>
+      </div>
+      <div class="grid grid-cols-4 gap-2 mt-3 text-center">
+        <div class="rounded-xl py-2" style="background:var(--surface-2)"><div class="text-[13px] font-bold">${a.steps}</div><div class="text-[10px]" style="color:var(--on-soft)">步骤</div></div>
+        <div class="rounded-xl py-2" style="background:var(--surface-2)"><div class="text-[13px] font-bold">${a.time}</div><div class="text-[10px]" style="color:var(--on-soft)">最近</div></div>
+        <div class="rounded-xl py-2" style="background:var(--surface-2)"><div class="text-[13px] font-bold" style="color:var(--success)">${a.rate}</div><div class="text-[10px]" style="color:var(--on-soft)">成功率</div></div>
+        <div class="rounded-xl py-2" style="background:var(--surface-2)"><div class="text-[13px] font-bold">${a.mode}</div><div class="text-[10px]" style="color:var(--on-soft)">模式</div></div>
+      </div>
+    </div>`).join('');
+}
+
+function renderLogs(filterLv='all',filterChan='all'){
+  const list = document.getElementById('logList');
+  const data = LOGS.filter(l => (filterLv==='all'||l.lv===filterLv) && (filterChan==='all'|| (filterChan==='lan'?l.chan==='局域网':l.chan==='蓝牙')));
+  document.getElementById('logEmpty').classList.toggle('hidden', data.length>0);
+  list.innerHTML = data.map((l,i)=>`
+    <div class="log-row" onclick="expandLog(${i})">
+      <span class="mt-0.5 badge ${lvClass(l.lv)}" style="min-width:50px;justify-content:center">${l.lv}</span>
+      <span class="flex-1 min-w-0">
+        <span class="block text-[13px] truncate"><b>${l.method}</b> ${l.path}</span>
+        <span class="block text-[11px]" style="color:var(--on-muted)">${l.time} · ${l.chan}</span>
+        <span class="block text-[12px] mt-1 hidden" id="detail-${i}" style="color:var(--on-muted)">
+          <span class="block font-semibold mt-1" style="color:var(--on)">请求</span>
+          <span class="block font-mono text-[11px] whitespace-pre-wrap" style="background:var(--surface-2);border-radius:8px;padding:8px;margin-top:2px">${l.detail.req}</span>
+          <span class="block font-semibold mt-2" style="color:var(--on)">响应</span>
+          <span class="block font-mono text-[11px] whitespace-pre-wrap" style="background:var(--surface-2);border-radius:8px;padding:8px;margin-top:2px">${l.detail.resp}</span>
+        </span>
+      </span>
+      <span class="text-right flex flex-col items-end">
+        <span class="badge ${l.code>=500?'lv-error':l.code>=400?'lv-warn':'lv-info'}">${l.code}</span>
+        <span class="text-[10px] mt-1" style="color:var(--on-soft)">${l.ms}ms</span>
+      </span>
+    </div>`).join('');
+}
+
+/* ==================== 交互 ==================== */
+let currentTab = 0;
+const TITLES=['首页','路由','聚合','日志','设置'];
+function switchTab(i){
+  currentTab=i;
+  document.querySelectorAll('.page').forEach((p,j)=>p.classList.toggle('active',j===i));
+  document.querySelectorAll('.nav-item').forEach((n,j)=>n.classList.toggle('active',j===i));
+  document.getElementById('pageTitle').textContent=TITLES[i];
+  // 悬浮按钮仅在路由/聚合页出现（新建路由 / 新建聚合）
+  const fab=document.getElementById('fab');
+  if(i===1||i===2){
+    fab.style.display='flex';
+    fab.innerHTML=`<i class="ic !w-7 !h-7" data-icon="plus"></i>`;
+  } else {
+    fab.style.display='none';
+  }
+  injectIcons();
+  document.getElementById('content').scrollTop=0;
+}
+function fabAction(){
+  if(currentTab===1) showRouteForm(null);
+  else if(currentTab===2) showModal('newAgg');
+  else if(currentTab===3) showToast('导出日志');
+  else { showToast('已刷新'); }
+}
+
+/* 抽屉 */
+function openDrawer(){ document.getElementById('drawer').classList.add('open'); document.getElementById('scrim').classList.add('show'); }
+function closeDrawer(){ document.getElementById('drawer').classList.remove('open'); document.getElementById('scrim').classList.remove('show'); }
+function pickMode(el,name){
+  document.querySelectorAll('.drawer-row').forEach(r=>r.classList.remove('active'));
+  el.classList.add('active');
+  // 更新各处的模式文本
+  document.querySelectorAll('#statusPanel [data-mode]').forEach(()=>{});
+  showToast('已切换到 '+name);
+}
+function cycleTheme(){
+  const th=['system','light','dark'];
+  let cur=document.documentElement.getAttribute('data-theme');
+  let next=th[(th.indexOf(cur)+1)%3];
+  applyTheme(next);
+  showToast({system:'主题：跟随系统',light:'主题：浅色',dark:'主题：深色'}[next]);
+}
+let themePref='system';
+function applyTheme(v){
+  themePref=v; document.documentElement.setAttribute('data-theme',v);
+  const label=document.getElementById('themeLabel');
+  if(label) label.textContent=v==='system'?'跟随系统':v==='light'?'浅色':'深色';
+}
+(function initTheme(){
+  const sys=window.matchMedia('(prefers-color-scheme: dark)');
+  const apply=()=>{ if(themePref==='system') document.documentElement.setAttribute('data-theme', sys.matches?'dark':'light'); };
+  apply(); sys.addEventListener('change',apply);
+})();
+
+/* 状态条 */
+let stripOpen=false;
+function toggleStatusPanel(force){
+  stripOpen = force!==undefined ? force : !stripOpen;
+  document.getElementById('statusPanel').classList.toggle('open',stripOpen);
+  document.getElementById('statusScrim').classList.toggle('show',stripOpen);
+  const chev = document.querySelector('#statusStrip [data-icon]');
+  if (chev) chev.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[stripOpen?'chevron-down':'chevron-up']}</svg>`;
+}
+function toggleStripPower(e){
+  e.stopPropagation();
+  // 仅视觉演示
+  showToast('网关切换（演示）');
+}
+
+/* 网关启停 */
+function toggleGateway(btn){
+  const running = btn.querySelector('span').textContent==='停止';
+  const on = !running;
+  if(on){
+    btn.innerHTML=`${ic('stop')}<span>停止</span>`;
+    showToast('网关已启动');
+  } else {
+    btn.innerHTML=`${ic('play')}<span>启动</span>`;
+    showToast('网关已停止');
+  }
+  injectIcons();
+}
+
+/* Toast */
+let toastTimer;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),1800);
+}
+
+/* 地址复制 / 二维码 */
+function copyAddr(){ showToast('访问地址已复制'); }
+function showQr(){
+  showModal('qr');
+  const wrap=document.getElementById('qrWrap');
+  const cells=[];
+  const n=15;
+  const finder=[[0,0],[n-7,0],[0,n-7]];
+  for(let y=0;y<n;y++){ for(let x=0;x<n;x++){
+    let inFinder=finder.some(([fx,fy])=> x>=fx&&x<fx+7&&y>=fy&&y<fy+7);
+    let fill = inFinder ? !( (x>fx&&x<fx+6&&y>fy&&y<fy+6) || ((x-fx)%6===0)||((y-fy)%6===0) ) : Math.random()>.5;
+    cells.push(`<span class="cell ${fill?'':'blank'}"></span>`);
+  }}
+  wrap.innerHTML=cells.join('');
+  wrap.style.gridTemplateColumns=`repeat(${n},1fr)`;
+}
+
+/* 模态 */
+function closeModal(e){
+  if(e && e.target!==document.getElementById('modalWrap') && e.target.id!=='modalWrap') return;
+  document.getElementById('modalWrap').classList.remove('open');
+  document.getElementById('modalWrap').style.display='none';
+}
+function openModal(){ const w=document.getElementById('modalWrap'); w.style.display='flex'; requestAnimationFrame(()=>w.classList.add('open')); }
+function showModal(kind){
+  const sheet=document.getElementById('modalSheet');
+  const map={
+    qr:`
+      <div class="flex items-center justify-between mb-4"><span class="text-[17px] font-bold">访问二维码</span><button class="topbar-btn" onclick="closeModal()">${ic('close')}</button></div>
+      <div id="qrWrap" class="qr"></div>
+      <div class="text-center mt-3 font-mono text-[15px] font-semibold">http://192.168.137.23:8080</div>
+      <div class="text-center text-[12px] mt-1" style="color:var(--on-muted)">扫码连接网关</div>
+      <button class="btn btn-primary btn-block mt-5" onclick="showToast('二维码已保存到相册');closeModal()">${ic('download')}保存二维码</button>`,
+    newAgg:`
+      <div class="flex items-center justify-between mb-4"><span class="text-[17px] font-bold">新建聚合</span><button class="topbar-btn" onclick="closeModal()">${ic('close')}</button></div>
+      <div class="space-y-3">
+        <div><div class="text-[13px] mb-1" style="color:var(--on-muted)">聚合名称</div><input class="field" placeholder="用户订单聚合"></div>
+        <div class="flex gap-2">
+          <div class="flex-1"><div class="text-[13px] mb-1" style="color:var(--on-muted)">方法</div><select class="field"><option>GET</option><option>POST</option></select></div>
+          <div class="flex-[2]"><div class="text-[13px] mb-1" style="color:var(--on-muted)">路径</div><input class="field font-mono" value="/api/"></div>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-block mt-5" onclick="saveAgg()">${ic('check')}保存聚合</button>`,
+    about:`
+      <div class="text-center mb-4">
+        <div class="mx-auto w-16 h-16 rounded-3xl flex items-center justify-center" style="background:var(--primary);color:var(--on-primary)">${ic('gateway','!w-9 !h-9')}</div>
+        <div class="font-bold text-[17px] mt-3">移动聚合网关</div>
+        <div class="text-[13px]" style="color:var(--on-muted)">个人移动聚合服务器 · v1.2.0</div>
+      </div>
+      <div class="sheet-card p-4 text-[13px] space-y-2" style="color:var(--on-muted)">
+        <div class="flex justify-between"><span>作者</span><span style="color:var(--on)">个人开发</span></div>
+        <div class="flex justify-between"><span>开源协议</span><span style="color:var(--on)">MIT</span></div>
+        <div class="flex justify-between"><span>构建</span><span style="color:var(--on)">2025-01-01</span></div>
+      </div>
+      <button class="btn btn-primary btn-block mt-5" onclick="closeModal()">知道了</button>`
+  };
+  sheet.innerHTML=map[kind];
+  openModal();
+  if(kind==='qr') showQr();
+}
+function saveRoute(){ showToast('路由已创建'); closeModal(); }
+function saveAgg(){ showToast('聚合已创建'); closeModal(); }
+
+/* 路由页 */
+function routeFilter(el,f){ document.querySelectorAll('#page-routes .chip').forEach(c=>c.classList.remove('active')); el.classList.add('active'); renderRoutes(f); }
+function filterRoutes(){ /* 搜索演示 */ }
+function toggleRoute(id,cb){ showToast(cb.checked?'路由已启用':'路由已禁用'); }
+function openRoute(id){ showRouteForm(id); }
+function aggFilter(el,f){ document.querySelectorAll('#page-agg .chip').forEach(c=>c.classList.remove('active')); el.classList.add('active'); renderAgg(f); }
+function toggleAgg(id,cb){ showToast(cb.checked?'聚合已启动':'聚合已停止'); }
+function openAgg(id){ showAggDetail(id); }
+
+function showAggDetail(id){
+  const a=AGG.find(x=>x.id===id);
+  const sheet=document.getElementById('modalSheet');
+  sheet.innerHTML=`
+    <div class="flex items-center justify-between mb-1"><span class="text-[17px] font-bold">${a.name}</span><button class="topbar-btn" onclick="closeModal()">${ic('close')}</button></div>
+    <div class="flex items-center gap-2 text-[12px] flex-wrap" style="color:var(--on-muted)"><span class="badge lv-info">${a.method}</span><span class="font-mono">${a.path}</span><span class="badge" style="background:var(--surface-2);color:var(--on-muted)">${a.mode}</span></div>
+    <div class="mt-4 mb-2 flex items-center justify-between"><span class="text-[13px] font-bold">编排步骤</span>
+      <span class="text-[12px] flex items-center gap-1" style="color:var(--on-soft)">${ic('drag','!w-4 !h-4')}拖拽排序</span>
+    </div>
+    <div class="space-y-2" id="aggSteps">
+      ${a.stepList.map((s,i)=>`
+        <div class="sheet-card p-3" draggable="true">
+          <div class="flex items-center gap-3">
+            <span class="w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-bold flex-shrink-0" style="background:var(--primary-soft);color:var(--primary)">${i+1}</span>
+            <span class="flex-1 min-w-0"><span class="block text-[14px] font-semibold">${s.name}</span><span class="block text-[11px] font-mono truncate" style="color:var(--on-muted)">${s.api} · ${s.proto}</span></span>
+            <i class="ic" style="color:var(--on-soft)" data-icon="drag"></i>
+          </div>
+          <div class="mt-2 flex items-center gap-2">
+            <span class="text-[11px] flex-shrink-0" style="color:var(--on-soft)">输出提取</span>
+            <select class="field !min-h-[34px] flex-1 text-[12px]" onchange="stepExtractChanged(this)">
+              <option ${s.extract==='通用文本提取'?'selected':''}>通用文本提取</option>
+              <option ${s.extract==='自定义 JSONPath'?'selected':''}>自定义 JSONPath</option>
+            </select>
+          </div>
+          <input class="field !min-h-[34px] text-[12px] font-mono mt-2 ${s.extract==='通用文本提取'?'hidden':''}" placeholder="$.data.items[*].price">
+        </div>`).join('')}
+    </div>
+    <div class="mt-3 mb-1 text-[13px] font-bold">执行方式</div>
+    <div class="seg"><button class="${a.mode==='并行'?'active':''}" onclick="this.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('active'));this.classList.add('active')">并行</button><button class="${a.mode==='串行'?'active':''}" onclick="this.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('active'));this.classList.add('active')">串行</button></div>
+    <div class="mt-3 mb-1 text-[13px] font-bold">字段映射</div>
+    <div class="sheet-card p-3 text-[12px] font-mono" style="color:var(--on-muted)">user.name → result.userName<br>orders.list → result.orderList</div>
+    <button class="btn btn-tonal btn-block mt-4" onclick="openTestPage()">${ic('send')}测试聚合</button>
+  `;
+  openModal(); injectIcons();
+}
+function stepExtractChanged(sel){
+  const jp=sel.closest('.sheet-card').querySelector('input.field');
+  if(jp) jp.classList.toggle('hidden', sel.value==='通用文本提取');
+  showToast(sel.value==='通用文本提取'?'网关将自动适配各平台响应结构':'使用自定义 JSONPath 提取');
+}
+/* ==================== 路由表单：协议适配 ==================== */
+function showRouteForm(id){
+  const r = id ? ROUTES.find(x=>x.id===id) : null;
+  const sheet=document.getElementById('modalSheet');
+  sheet.innerHTML=`
+    <div class="flex items-center justify-between mb-3"><span class="text-[17px] font-bold">${r?'编辑路由':'新建路由'}</span><button class="topbar-btn" onclick="closeModal()">${ic('close')}</button></div>
+    <div class="text-[13px] mb-2" style="color:var(--on-muted)">平台预设（自动匹配协议类型）</div>
+    <div class="flex gap-2 flex-wrap">
+      ${PLATFORM_PRESETS.map(p=>`<button class="chip" onclick="applyPreset('${p.name}',this)">${p.name}</button>`).join('')}
+    </div>
+    <div class="space-y-3 mt-4">
+      <div><div class="text-[13px] mb-1" style="color:var(--on-muted)">路径</div><input id="rfPath" class="field font-mono" value="${r?r.path:'/v1/chat/*'}"></div>
+      <div><div class="text-[13px] mb-1" style="color:var(--on-muted)">目标地址</div><input id="rfTarget" class="field font-mono" value="${r?r.target:'https://api.openai.com/v1'}"></div>
+      <div><div class="text-[13px] mb-1" style="color:var(--on-muted)">协议类型</div>
+        <select id="rfProto" class="field" onchange="protoChanged()">
+          ${Object.entries(PROTOCOLS).map(([k,v])=>`<option value="${k}" ${r&&r.proto===k?'selected':''}>${v.name}</option>`).join('')}
+        </select>
+      </div>
+      <div class="flex items-center justify-between">
+        <div><div class="text-[14px] font-semibold">强制转为 OpenAI 格式</div><div class="text-[11px]" style="color:var(--on-soft)">请求/响应统一转换为 OpenAI 结构</div></div>
+        <label class="switch"><input id="rfForce" type="checkbox" ${!r||r.force?'checked':''}><span class="track"></span></label>
+      </div>
+      <div><div class="text-[13px] mb-1" style="color:var(--on-muted)">默认模型（内置字典建议）</div>
+        <input id="rfModel" class="field font-mono" list="modelDict" value="${r?r.model:''}" placeholder="选择或输入模型名">
+        <datalist id="modelDict">${MODEL_DICT.map(m=>`<option value="${m}">`).join('')}</datalist>
+      </div>
+      <button id="rfKeysBtn" class="sheet-card w-full flex items-center justify-between p-3" onclick="showApiKeys()">
+        <span class="text-left"><span class="block text-[14px] font-semibold">API Key</span><span class="block text-[11px]" style="color:var(--on-soft)">${r?r.keys:1} 个已配置 · 底部抽屉管理</span></span>
+        <span class="btn btn-tonal !min-h-[36px] !px-3 text-[12px]">管理</span>
+      </button>
+      <div class="sheet-card overflow-hidden">
+        <button class="w-full flex items-center justify-between p-3" onclick="toggleAdv()">
+          <span class="text-[14px] font-semibold">高级设置</span><i id="advChevron" class="ic" data-icon="chevron-down"></i>
+        </button>
+        <div id="advBody" class="hidden px-3 pb-3 space-y-3">
+          <div><div class="text-[13px] mb-1" style="color:var(--on-muted)">系统提示词</div><textarea rows="3" class="field">你是网关助手，简洁准确地回答。</textarea></div>
+          <div class="flex items-center justify-between"><div><div class="text-[14px]">上下文缓存</div><div class="text-[11px]" style="color:var(--on-soft)">命中缓存可降低 Token 费用</div></div><label class="switch"><input type="checkbox" checked><span class="track"></span></label></div>
+        </div>
+      </div>
+    </div>
+    <button id="pullBtn" class="btn btn-tonal btn-block mt-4" onclick="pullModels()">${ic('refresh')}测试并拉取模型</button>
+    <div id="pullState" class="mt-3"></div>
+    <button class="btn btn-primary btn-block mt-2" onclick="saveRoute()">${ic('check')}保存路由</button>`;
+  openModal(); injectIcons();
+}
+function applyPreset(name,el){
+  el.parentElement.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  const p=PLATFORM_PRESETS.find(x=>x.name===name);
+  document.getElementById('rfProto').value=p.proto;
+  if(p.target) document.getElementById('rfTarget').value=p.target;
+  const P=PROTOCOLS[p.proto];
+  if(P.models[0]) document.getElementById('rfModel').value=P.models[0];
+  showToast('已自动匹配协议：'+P.name);
+}
+function protoChanged(){ showToast('协议类型：'+PROTOCOLS[document.getElementById('rfProto').value].name); }
+function toggleAdv(){
+  const b=document.getElementById('advBody');
+  b.classList.toggle('hidden');
+  document.getElementById('advChevron').innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[b.classList.contains('hidden')?'chevron-down':'chevron-up']}</svg>`;
+}
+function pickModel(m){ document.getElementById('rfModel').value=m; showToast('默认模型：'+m); }
+function stateCard(type,title,desc){
+  const c = type==='ok' ? ['var(--success-soft)','var(--success)','dot-success']
+        : type==='warn' ? ['var(--warn-soft)','var(--warn)','dot-warn']
+        : ['var(--danger-soft)','var(--error)','dot-error'];
+  return `<div class="rounded-2xl p-3 flex items-start gap-2" style="background:${c[0]}">
+    <span class="status-dot ${c[2]}" style="margin-top:5px"></span>
+    <span><span class="block text-[13px] font-bold" style="color:${c[1]}">${title}</span><span class="block text-[12px] mt-0.5" style="color:var(--on-muted)">${desc}</span></span></div>`;
+}
+function pullModels(){
+  const proto=document.getElementById('rfProto').value;
+  const st=document.getElementById('pullState');
+  st.innerHTML=`<div class="sheet-card p-3 text-[13px] flex items-center gap-2" style="color:var(--on-muted)"><span class="status-dot dot-warn" style="box-shadow:none"></span>正在测试连接并拉取模型…</div>`;
+  setTimeout(()=>{
+    const P=PROTOCOLS[proto];
+    if(!P.pull){
+      /* 平台不支持自动拉取 → 内置模型列表 + 自动填充推荐模型 */
+      st.innerHTML=stateCard('warn','该平台不支持自动拉取','已加载内置模型列表，推荐模型已填充')
+        +`<div class="flex flex-wrap gap-2 mt-2">${P.models.map((m,i)=>`<button class="chip ${i===0?'active':''}" onclick="pickModel('${m}')">${m}</button>`).join('')}</div>`;
+      document.getElementById('rfModel').value=P.models[0];
+      showToast('已加载内置模型列表');
+    } else if(proto==='custom'){
+      /* 模拟拉取失败 */
+      st.innerHTML=stateCard('error','拉取失败 · ECONNREFUSED','http://127.0.0.1:11434 连接被拒绝，请检查地址或 API Key')
+        +`<button class="btn btn-surface btn-block mt-2 !min-h-[40px]" onclick="pullModels()">${ic('refresh')}重试</button>`;
+      showToast('拉取失败，请检查配置');
+    } else {
+      /* 拉取成功 → 统一解析为 OpenAI 格式 */
+      st.innerHTML=stateCard('ok',`拉取成功 · ${P.models.length} 个模型`,'已统一解析为 OpenAI 格式，点击即可设为默认模型')
+        +`<div class="flex flex-wrap gap-2 mt-2">${P.models.map(m=>`<button class="chip" onclick="pickModel('${m}')">${m}</button>`).join('')}</div>`;
+      document.getElementById('rfModel').value=P.models[0];
+      showToast('模型列表已更新（OpenAI 格式）');
+    }
+    injectIcons();
+  },900);
+}
+
+/* ==================== API Key 底部抽屉 ==================== */
+let apiKeys=[
+  {name:'主力 Key', key:'sk-ant-api03-9f2aXk29aA1b', ok:true},
+  {name:'备用 Key', key:'sk-proj-4f2cQw81zZ3dE6', ok:false}
+];
+let addingKey=false;
+function maskKey(k){ return k.slice(0,10)+'••••'+k.slice(-4); }
+function showApiKeys(){
+  addingKey=false;
+  const sheet=document.getElementById('modalSheet');
+  sheet.innerHTML=`
+    <div class="flex items-center justify-between mb-3"><span class="text-[17px] font-bold">API Key 管理</span><button class="topbar-btn" onclick="closeModal()">${ic('close')}</button></div>
+    <div id="keyList" class="space-y-2"></div>
+    <button class="btn btn-primary btn-block mt-4" onclick="addKey()">${ic('plus')}添加 Key</button>
+    <div class="text-[11px] text-center mt-2" style="color:var(--on-soft)">Key 仅存储在本机，导出配置时加密</div>`;
+  renderKeys(); openModal(); injectIcons();
+}
+function renderKeys(){
+  document.getElementById('keyList').innerHTML=apiKeys.map((k,i)=>`
+    <div class="sheet-card p-3 flex items-center gap-3">
+      <span class="status-dot ${k.ok?'dot-success':'dot-error'}" style="box-shadow:none"></span>
+      <span class="flex-1 min-w-0"><span class="block text-[14px] font-semibold">${k.name}</span><span class="block text-[12px] font-mono truncate" style="color:var(--on-muted)">${maskKey(k.key)}</span></span>
+      <span class="badge ${k.ok?'lv-info':'lv-error'}">${k.ok?'有效':'失效'}</span>
+      <button class="topbar-btn !w-9 !h-9" onclick="delKey(${i})">${ic('trash')}</button>
+    </div>`).join('')
+    + (addingKey?`
+    <div class="sheet-card p-3 space-y-2">
+      <input id="nkName" class="field" placeholder="名称（如：备用 Key）">
+      <input id="nkVal" class="field font-mono" placeholder="sk-...">
+      <div class="flex gap-2"><button class="btn btn-primary flex-1 !min-h-[40px]" onclick="saveNewKey()">${ic('check')}保存</button><button class="btn btn-surface !min-h-[40px]" onclick="addingKey=false;renderKeys()">取消</button></div>
+    </div>`:'');
+  injectIcons();
+}
+function addKey(){ addingKey=true; renderKeys(); }
+function saveNewKey(){
+  const n=document.getElementById('nkName').value.trim()||'未命名 Key';
+  const v=document.getElementById('nkVal').value.trim();
+  if(!v){ showToast('请输入 Key 内容'); return; }
+  apiKeys.push({name:n,key:v,ok:true}); addingKey=false; renderKeys(); showToast('Key 已添加');
+}
+function delKey(i){ apiKeys.splice(i,1); renderKeys(); showToast('Key 已删除'); }
+
+/* ==================== 首页 Token 消耗（横滑卡片） ==================== */
+const TOKEN_STATS=[
+  {model:'claude-sonnet-4',  proto:'anthropic', tin:'31.2K', tout:'12.8K', cost:'$1.24', pct:62},
+  {model:'gpt-4o-mini',      proto:'openai',    tin:'28.4K', tout:'17.7K', cost:'$0.06', pct:34},
+  {model:'gemini-2.5-flash', proto:'gemini',    tin:'96.1K', tout:'24.2K', cost:'$0.03', pct:88}
+];
+function renderTokenStats(){
+  const total=TOKEN_STATS.reduce((s,t)=>s+parseFloat(t.cost.slice(1)),0);
+  document.getElementById('tokenStats').innerHTML=
+    `<div class="card p-3 flex-shrink-0" style="width:132px;background:var(--primary);color:var(--on-primary);border:none">
+       <div class="text-[11px] opacity-80">今日总消耗</div>
+       <div class="text-[22px] font-extrabold mt-1">$${total.toFixed(2)}</div>
+       <div class="text-[11px] opacity-80 mt-0.5">≈ 210K tokens</div>
+       <div class="text-[11px] opacity-80 mt-2">${TOKEN_STATS.length} 个模型 · 3 条路由</div>
+     </div>`
+    + TOKEN_STATS.map(t=>`
+     <div class="card p-3 flex-shrink-0" style="width:150px">
+       <div class="flex items-center gap-1.5"><span class="badge lv-info !text-[10px]">${PROTOCOLS[t.proto].short}</span></div>
+       <div class="font-mono text-[12px] font-bold mt-1.5 truncate">${t.model}</div>
+       <div class="text-[19px] font-extrabold mt-1">${t.cost}</div>
+       <div class="text-[10px]" style="color:var(--on-soft)">↑${t.tin} ↓${t.tout} tokens</div>
+       <div class="stat-ripple mt-2"><div style="width:${t.pct}%;background:var(--primary)"></div></div>
+     </div>`).join('');
+}
+
+/* ==================== 全屏聚合测试页（打字机流式） ==================== */
+const TW_STEPS=[
+  {name:'调用用户服务', proto:'OpenAI 兼容', model:'gpt-4o-mini',      ms:118},
+  {name:'调用订单服务', proto:'Anthropic',   model:'claude-sonnet-4',  ms:342}
+];
+const TW_TEXT='【聚合结果 · gpt-4o-mini + claude-sonnet-4】\n\n用户「张三」近 30 天共产生 12 笔订单，累计消费 ¥3,486，客单价 ¥290。\n\n其中 6 月下单 5 笔，以数码配件为主；7 月转向家居用品，退货率 8.3%，低于平台均值。\n\n建议：向其推送智能家居品类优惠券，预计转化率可提升约 12%。';
+const TW_TOKENS={in:1024,out:356};
+let twTimer=null;
+function setTwStep(i,state){
+  const el=document.getElementById('twStep'+i); if(!el||state===null) return;
+  const dot=el.querySelector('.status-dot'), lab=el.lastElementChild;
+  if(state==='wait'){ dot.className='status-dot dot-warn'; lab.textContent='等待中'; }
+  if(state==='run'){ dot.className='status-dot dot-warn'; lab.textContent='请求中…'; }
+  if(state==='done'){ dot.className='status-dot dot-success'; lab.textContent=TW_STEPS[i].ms+'ms · 完成'; }
+}
+function openTestPage(){
+  document.getElementById('modalWrap').style.display='none';
+  document.getElementById('modalWrap').classList.remove('open');
+  const p=document.getElementById('testPage');
+  p.style.display='flex';
+  document.getElementById('twSteps').innerHTML=TW_STEPS.map((s,i)=>`
+    <div class="flex items-center gap-2 rounded-xl px-3 py-2" style="background:var(--surface-2)" id="twStep${i}">
+      <span class="status-dot dot-warn" style="width:8px;height:8px;box-shadow:none"></span>
+      <span class="flex-1 min-w-0"><span class="block text-[13px] font-semibold">${s.name}</span><span class="block text-[11px] font-mono" style="color:var(--on-muted)">${s.proto} · ${s.model}</span></span>
+      <span class="text-[11px]" style="color:var(--on-soft)">等待中</span>
+    </div>`).join('');
+  const t=document.getElementById('twText'); t.textContent='';
+  const b=document.getElementById('twBadge'); b.textContent='流式输出中'; b.className='badge lv-info'; b.style.background=''; b.style.color='';
+  document.getElementById('twIn').textContent=TW_TOKENS.in;
+  document.getElementById('twOut').textContent='0';
+  document.getElementById('twTotal').textContent=TW_TOKENS.in;
+  document.getElementById('twCost').textContent='$0.0000';
+  let i=0; const len=TW_TEXT.length;
+  clearInterval(twTimer);
+  twTimer=setInterval(()=>{
+    t.textContent+=TW_TEXT[i]; i++;
+    const ratio=i/len;
+    setTwStep(0, ratio>0.06 ? 'run' : 'wait');
+    setTwStep(0, ratio>0.40 ? 'done' : null);
+    setTwStep(1, ratio>0.45 ? 'run' : null);
+    setTwStep(1, ratio>0.92 ? 'done' : null);
+    const out=Math.round(TW_TOKENS.out*ratio);
+    document.getElementById('twOut').textContent=out;
+    document.getElementById('twTotal').textContent=TW_TOKENS.in+out;
+    document.getElementById('twCost').textContent='$'+((TW_TOKENS.in*3+out*15)/1e6).toFixed(4);
+    if(i>=len){
+      clearInterval(twTimer);
+      setTwStep(0,'done'); setTwStep(1,'done');
+      b.textContent='已完成 · 200 OK'; b.className='badge'; b.style.background='var(--success-soft)'; b.style.color='var(--success)';
+    }
+  },14);
+}
+function closeTestPage(){
+  clearInterval(twTimer);
+  document.getElementById('testPage').style.display='none';
+}
+
+/* 日志页 */
+function filterLogs(){
+  const lv=document.querySelectorAll('#page-logs select')[0].value;
+  const chan=document.querySelectorAll('#page-logs select')[1].value;
+  renderLogs(lv,chan);
+}
+function expandLog(i){ document.getElementById('detail-'+i).classList.toggle('hidden'); }
+function clearLogs(){
+  document.getElementById('logList').innerHTML='';
+  document.getElementById('logEmpty').classList.remove('hidden');
+  document.getElementById('logEmpty').textContent='日志已清空';
+  showToast('日志已清空');
+}
+
+/* 设置 */
+function importExport(){ showToast('打开系统文件选择器（演示）'); }
+function confirmReset(){
+  if(confirm('确定恢复默认设置？此操作将覆盖当前配置。')){
+    showToast('已恢复默认设置');
+  }
+}
+
+/* 多选演示（路由长按） */
+let multiMode=false;
+function exitMulti(){ multiMode=false; document.body.classList.remove('multi'); document.getElementById('multiBar').classList.add('hidden'); }
+function multiAction(a){ showToast(a+' '+document.getElementById('multiCount').textContent); exitMulti(); }
+
+/* 初始化 */
+injectIcons();
+renderHomeLogs();
+renderMiniLogs();
+renderSpark();
+renderRoutes('all');
+renderAgg('all');
+renderLogs('all','all');
+renderTokenStats();
+switchTab(0);
+</script>
+</body>
+</html>

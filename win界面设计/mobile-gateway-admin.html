@@ -1,0 +1,1505 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>个人移动聚合网关 · 管理界面</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  /* ================= Windows 11 Fluent 主题令牌 ================= */
+  :root {
+    --bg: #f3f3f3;
+    --surface: rgba(255, 255, 255, 0.72);
+    --surface-strong: rgba(255, 255, 255, 0.92);
+    --card: rgba(255, 255, 255, 0.72);
+    --sidebar: rgba(250, 250, 250, 0.85);
+    --border: rgba(0, 0, 0, 0.07);
+    --divider: rgba(0, 0, 0, 0.06);
+    --text: #1f1f1f;
+    --text-2: #616161;
+    --text-3: #939393;
+    --accent: #0078d4;
+    --accent-hover: #106ebe;
+    --accent-soft: rgba(0, 120, 212, 0.12);
+    --danger: #d13438;
+    --danger-soft: rgba(209, 52, 56, 0.12);
+    --warn: #d83b01;
+    --warn-soft: rgba(216, 59, 1, 0.12);
+    --ok: #107c10;
+    --ok-soft: rgba(16, 124, 16, 0.12);
+    --shadow: 0 1px 2px rgba(0,0,0,.05), 0 6px 20px rgba(0,0,0,.06);
+    --shadow-lg: 0 8px 40px rgba(0,0,0,.16);
+    --acrylic: blur(24px) saturate(180%);
+  }
+  [data-theme="dark"] {
+    --bg: #202020;
+    --surface: rgba(37, 37, 37, 0.72);
+    --surface-strong: rgba(48, 48, 48, 0.94);
+    --card: rgba(37, 37, 37, 0.72);
+    --sidebar: rgba(32, 32, 32, 0.88);
+    --border: rgba(255, 255, 255, 0.08);
+    --divider: rgba(255, 255, 255, 0.07);
+    --text: #f3f3f3;
+    --text-2: #a6a6a6;
+    --text-3: #6e6e6e;
+    --accent: #4cc2ff;
+    --accent-hover: #5fc8ff;
+    --accent-soft: rgba(76, 194, 255, 0.14);
+    --danger: #f36c6c;
+    --danger-soft: rgba(243, 108, 108, 0.16);
+    --warn: #ffb900;
+    --warn-soft: rgba(255, 185, 0, 0.16);
+    --ok: #6ccb6c;
+    --ok-soft: rgba(108, 203, 108, 0.16);
+    --shadow: 0 1px 3px rgba(0,0,0,.4), 0 6px 24px rgba(0,0,0,.35);
+    --shadow-lg: 0 12px 48px rgba(0,0,0,.5);
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    font-family: "Segoe UI", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+    margin: 0;
+    color: var(--text);
+    background: var(--bg);
+    min-width: 1280px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .backdrop { position: fixed; inset: 0; background: var(--bg); }
+  .acrylic {
+    background: var(--surface);
+    -webkit-backdrop-filter: var(--acrylic);
+    backdrop-filter: var(--acrylic);
+    border: 1px solid var(--border);
+  }
+  .card {
+    background: var(--card);
+    -webkit-backdrop-filter: var(--acrylic);
+    backdrop-filter: var(--acrylic);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+  }
+  .page { display: none; animation: fadein .18s ease; }
+  .page.active { display: block; }
+  @keyframes fadein { from { opacity: 0; transform: translateY(4px);} to { opacity:1; transform:none;} }
+
+  /* 按钮 */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    border-radius: 6px; padding: 7px 14px; font-size: 13px; font-weight: 600;
+    cursor: pointer; border: 1px solid transparent; transition: all .14s ease;
+    user-select: none; line-height: 1.2;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-hover); box-shadow: 0 2px 8px rgba(0,120,212,.35); }
+  .btn-secondary { background: transparent; color: var(--text); border-color: var(--divider); }
+  .btn-secondary:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  .btn-danger { background: var(--danger-soft); color: var(--danger); }
+  .btn-danger:hover { background: var(--danger); color: #fff; }
+  .btn-ghost { background: transparent; color: var(--text-2); }
+  .btn-ghost:hover { background: var(--divider); color: var(--text); }
+  .btn-xs { padding: 4px 9px; font-size: 12px; border-radius: 5px; }
+
+  .icon-btn {
+    display: inline-flex; align-items:center; justify-content:center;
+    width: 34px; height: 34px; border-radius: 6px; cursor: pointer;
+    color: var(--text-2); transition: all .14s; background: transparent; border: none;
+  }
+  .icon-btn:hover { background: var(--divider); color: var(--text); }
+
+  /* 输入框 */
+  .inp, .sel {
+    width: 100%; padding: 8px 12px; font-size: 13px; color: var(--text);
+    background: var(--surface-strong); border: 1px solid var(--divider);
+    border-radius: 6px; outline: none; transition: border-color .15s, box-shadow .15s;
+  }
+  .inp:focus, .sel:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+  .lbl { font-size: 12px; color: var(--text-2); margin-bottom: 6px; display: block; font-weight: 600; }
+
+  /* 开关（Fluent） */
+  .switch { position: relative; display: inline-block; width: 40px; height: 20px; cursor: pointer; flex:none; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch .track {
+    position: absolute; inset: 0; border-radius: 999px;
+    background: var(--text-3); transition: background .18s;
+  }
+  .switch .knob {
+    position: absolute; top: 2px; left: 2px; width: 16px; height: 16px;
+    border-radius: 999px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.35);
+    transition: transform .18s;
+  }
+  .switch input:checked + .track { background: var(--accent); }
+  .switch input:checked + .track .knob { transform: translateX(20px); }
+  .switch input:focus-visible + .track { box-shadow: 0 0 0 2px var(--accent-soft); }
+
+  /* 表格 */
+  table.grid { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.grid th {
+    text-align: left; padding: 10px 12px; font-size: 11px; font-weight: 700;
+    color: var(--text-2); text-transform: uppercase; letter-spacing: .04em;
+    border-bottom: 1px solid var(--divider); cursor: pointer; white-space: nowrap;
+  }
+  table.grid th:hover { color: var(--accent); }
+  table.grid td { padding: 11px 12px; border-bottom: 1px solid var(--divider); color: var(--text); }
+  table.grid tbody tr:nth-child(even) { background: var(--divider); }
+  table.grid tbody tr:hover { background: var(--accent-soft); }
+  th .sortit { opacity: .5; }
+
+  /* 标签 */
+  .tag {
+    display: inline-flex; align-items:center; gap:5px; padding: 2px 9px;
+    font-size: 11px; font-weight: 600; border-radius: 4px; white-space: nowrap;
+  }
+  .tag-blue { background: var(--accent-soft); color: var(--accent); }
+  .tag-green { background: var(--ok-soft); color: var(--ok); }
+  .tag-red { background: var(--danger-soft); color: var(--danger); }
+  .tag-warn { background: var(--warn-soft); color: var(--warn); }
+  .tag-gray { background: var(--divider); color: var(--text-2); }
+  .dot { width: 7px; height: 7px; border-radius: 999px; display:inline-block; }
+  .dot-green { background: var(--ok); box-shadow: 0 0 0 3px var(--ok-soft); }
+  .dot-gray { background: var(--text-3); }
+
+  /* 模态框 */
+  .modal-backdrop {
+    position: fixed; inset: 0; z-index: 60; display: none; align-items: center; justify-content: center;
+    background: rgba(0,0,0,.4); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal {
+    width: 520px; max-width: 92vw; max-height: 86vh; overflow:auto;
+    background: var(--surface-strong); border-radius: 12px; border: 1px solid var(--border);
+    box-shadow: var(--shadow-lg); animation: pop .18s ease;
+  }
+  @keyframes pop { from { opacity:0; transform: scale(.96) translateY(6px);} to {opacity:1; transform:none;} }
+
+  /* Toast */
+  #toast-wrap { position: fixed; top: 16px; right: 16px; z-index: 90; display:flex; flex-direction:column; gap:8px; }
+  .toast {
+    display:flex; align-items:center; gap:10px; padding: 11px 14px; border-radius: 8px;
+    background: var(--surface-strong); border: 1px solid var(--border); box-shadow: var(--shadow-lg);
+    font-size: 13px; min-width: 240px; animation: slidein .2s ease;
+  }
+  .toast.hide { animation: slideout .2s ease forwards; }
+  @keyframes slidein { from { opacity:0; transform: translateX(24px);} to {opacity:1; transform:none;} }
+  @keyframes slideout { to { opacity:0; transform: translateX(24px);} }
+  .toast .ic { width: 18px; height: 18px; border-radius: 5px; flex:none; }
+
+  /* 导航 */
+  .nav-item {
+    display:flex; align-items:center; gap:12px; padding: 10px 14px; margin: 2px 10px;
+    border-radius: 6px; color: var(--text-2); font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all .14s; position: relative;
+  }
+  .nav-item:hover { background: var(--divider); color: var(--text); }
+  .nav-item.active { background: var(--accent-soft); color: var(--accent); }
+  .nav-item.active::before {
+    content:""; position:absolute; left:-10px; top:8px; bottom:8px; width:3px; border-radius:3px; background: var(--accent);
+  }
+  .chip {
+    display:inline-flex; align-items:center; gap:6px; padding: 5px 10px; border-radius: 6px;
+    border:1px solid var(--divider); font-size:12px; font-weight:600; color:var(--text-2); cursor:pointer; transition:all .14s;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--accent); background:var(--accent-soft); }
+  .chip.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+
+  .scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+  .scrollbar::-webkit-scrollbar-thumb { background: var(--text-3); border-radius: 4px; }
+  .scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .mono { font-family: "Cascadia Code", Consolas, monospace; font-size: 12px; }
+
+  .sec-title { font-size: 20px; font-weight: 700; }
+  .sec-sub { font-size: 13px; color: var(--text-2); }
+  .tooltip { position: relative; }
+  .kbd { padding:1px 6px; border-radius:4px; border:1px solid var(--divider); font-size:11px; color:var(--text-2); background:var(--divider); }
+</style>
+</head>
+<body>
+<div class="backdrop"></div>
+
+<!-- ================= 顶部标题栏 ================= -->
+<header class="acrylic sticky top-0 z-40 border-b" style="border-radius:0;">
+  <div class="flex items-center gap-3 px-5 h-[58px]">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background:var(--accent); box-shadow:0 3px 10px rgba(0,120,212,.4);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M6 12h3l2-5 3 9 2-4h2" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div>
+        <div class="font-bold text-[15px] leading-tight">个人移动聚合网关</div>
+        <div class="text-[11px]" style="color:var(--text-3)">Personal Mobile Aggregation Gateway</div>
+      </div>
+    </div>
+
+    <div style="flex:1"></div>
+
+    <div class="flex items-center gap-3">
+      <!-- 当前模式 -->
+      <div class="hidden xl:flex items-center gap-2 px-3 h-8 rounded-md border" style="border-color:var(--divider)">
+        <span class="tag tag-blue">电脑热点模式</span>
+      </div>
+      <!-- 连接状态 -->
+      <div class="hidden xl:flex items-center gap-2 px-3 h-8 rounded-md border" style="border-color:var(--divider)">
+        <span id="conn-dot" class="dot dot-green"></span>
+        <span class="text-[12px]" style="color:var(--text-2)">手机已连接</span>
+      </div>
+      <!-- 刷新 -->
+      <button class="icon-btn" id="btn-refresh" title="刷新">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.6-6.3M21 3v6h-6"/></svg>
+      </button>
+      <!-- 主题 -->
+      <button class="icon-btn" id="btn-theme" title="切换主题">
+        <svg id="icon-sun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        <svg id="icon-moon" class="hidden" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- ================= 主体 侧边栏 + 内容 ================= -->
+<div class="flex" style="height: calc(100vh - 112px);">
+  <!-- 侧边导航 -->
+  <nav class="acrylic w-[218px] flex-none border-r py-3 flex flex-col" style="overflow:auto">
+    <div class="nav-item active" data-page="dashboard">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+      仪表盘
+    </div>
+    <div class="nav-item" data-page="routes">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h6a3 3 0 0 0 3-3v-3M16 5h-6a3 3 0 0 0-3 3v3"/></svg>
+      路由管理
+    </div>
+    <div class="nav-item" data-page="aggregation">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="5" cy="18" r="2"/><circle cx="19" cy="18" r="2"/><path d="M7 7l3 3M17 7l-3 3M7 17l3-3M17 17l-3-3"/></svg>
+      API 聚合
+    </div>
+    <div class="nav-item" data-page="logs">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+      日志
+    </div>
+    <div class="nav-item" data-page="stats">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18M8 17v-5M13 17V7M18 17v-8"/></svg>
+      统计
+    </div>
+    <div class="nav-item" data-page="settings">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3 1a7 7 0 0 0-2-1.2L14.2 3H9.8l-.4 2.7a7 7 0 0 0-2 1.2l-2.3-1-2 3.4 2 1.5A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 2 1.2l.4 2.7h4.4l.4-2.7a7 7 0 0 0 2-1.2l2.3 1 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/></svg>
+      设置
+    </div>
+    <div class="nav-item" data-page="about">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/></svg>
+      关于
+    </div>
+    <div style="flex:1"></div>
+    <div class="mx-4 mb-2 p-3 rounded-lg border" style="border-color:var(--divider);background:var(--accent-soft)">
+      <div class="text-[11px] mb-1" style="color:var(--text-2)">温馨提示</div>
+      <div class="text-[11px]" style="color:var(--text);line-height:1.5">手机运行网关需保持热点连接稳定。请勿在电脑断开热点时发送请求。</div>
+    </div>
+  </nav>
+
+  <!-- 主内容区 -->
+  <main class="flex-1 overflow-auto scrollbar p-6" id="main">
+
+    <!-- ================= 仪表盘 ================= -->
+    <section class="page active" id="page-dashboard">
+      <div class="flex items-center justify-between mb-5">
+        <div>
+          <div class="sec-title">仪表盘</div>
+          <div class="sec-sub">网关运行概况与实时状态</div>
+        </div>
+        <div class="flex gap-2">
+          <button class="btn btn-secondary" onclick="toast('已复制手机 IP','success')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 9h9v9H9z"/><path d="M5 15V5h10"/></svg>
+            复制地址
+          </button>
+          <button class="btn btn-primary" onclick="openQr()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M20 14v.01M14 20h.01M18 18h3v3h-3z"/></svg>
+            生成二维码
+          </button>
+        </div>
+      </div>
+
+      <!-- Token 消耗统计 + 费用预估（桌面宽屏并排） -->
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div class="card p-5">
+          <div class="flex items-center justify-between mb-3">
+            <div class="text-[12px] font-semibold" style="color:var(--text-2)">Token 消耗统计 · 今日</div>
+            <span class="tag tag-gray">近 7 天</span>
+          </div>
+          <div class="flex items-end gap-6">
+            <div>
+              <div class="text-[26px] font-bold mono">2,847,392</div>
+              <div class="text-[11px]" style="color:var(--text-3)">总消耗 tokens</div>
+            </div>
+            <div class="flex gap-5 text-[12px]">
+              <div><span class="mono font-semibold">1,902,418</span><div style="color:var(--text-3)">输入</div></div>
+              <div><span class="mono font-semibold">944,974</span><div style="color:var(--text-3)">输出</div></div>
+              <div><span class="mono font-semibold" style="color:var(--ok)">−8.2%</span><div style="color:var(--text-3)">较昨日</div></div>
+            </div>
+          </div>
+          <div class="mt-4 space-y-2">
+            <div class="flex items-center gap-2 text-[11px]" style="color:var(--text-2)"><span class="w-14">OpenAI</span><div class="h-2 flex-1 rounded" style="background:var(--divider)"><div class="h-2 rounded" style="width:62%;background:var(--accent)"></div></div><span class="mono">62%</span></div>
+            <div class="flex items-center gap-2 text-[11px]" style="color:var(--text-2)"><span class="w-14">Anthropic</span><div class="h-2 flex-1 rounded" style="background:var(--divider)"><div class="h-2 rounded" style="width:28%;background:var(--warn)"></div></div><span class="mono">28%</span></div>
+            <div class="flex items-center gap-2 text-[11px]" style="color:var(--text-2)"><span class="w-14">Gemini</span><div class="h-2 flex-1 rounded" style="background:var(--divider)"><div class="h-2 rounded" style="width:10%;background:var(--ok)"></div></div><span class="mono">10%</span></div>
+          </div>
+        </div>
+
+        <div class="card p-5">
+          <div class="flex items-center justify-between mb-3">
+            <div class="text-[12px] font-semibold" style="color:var(--text-2)">费用预估 · 今日</div>
+            <span class="tag tag-green">预算内</span>
+          </div>
+          <div class="flex items-end justify-between">
+            <div>
+              <div class="text-[26px] font-bold mono" style="color:var(--accent)">$12.48</div>
+              <div class="text-[11px]" style="color:var(--text-3)">较昨日 +$1.2 · 本月累计 $86.1 / $200</div>
+            </div>
+            <div class="text-right text-[12px] space-y-0.5">
+              <div>OpenAI <span class="mono font-semibold">$8.21</span></div>
+              <div>Anthropic <span class="mono font-semibold">$3.52</span></div>
+              <div>Gemini <span class="mono font-semibold">$0.75</span></div>
+            </div>
+          </div>
+          <div class="mt-4 h-2 rounded" style="background:var(--divider)"><div class="h-2 rounded" style="width:43%;background:linear-gradient(90deg,var(--accent),var(--ok))"></div></div>
+          <div class="text-[11px] mt-1" style="color:var(--text-3)">月预算已使用 43% · 建议关注 Anthropic 权重配置</div>
+        </div>
+      </div>
+
+      <!-- 4 状态卡片 -->
+      <div class="grid grid-cols-4 gap-4 mb-4">
+        <div class="card p-5">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-[12px] font-semibold" style="color:var(--text-2)">网关状态</span>
+            <label class="switch"><input type="checkbox" checked id="gw-switch"><span class="track"><span class="knob"></span></span></label>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="gw-state-dot" class="dot dot-green"></span>
+            <span class="text-[22px] font-bold" id="gw-state-text">运行中</span>
+          </div>
+          <div class="text-[12px] mt-1" style="color:var(--text-3)">进程 PID 1024 · 持续 06:23:41</div>
+        </div>
+        <div class="card p-5">
+          <div class="mb-3 text-[12px] font-semibold" style="color:var(--text-2)">当前模式</div>
+          <div class="flex items-center gap-2"><span class="tag tag-blue">电脑热点</span></div>
+          <div class="text-[12px] mt-1" style="color:var(--text-3)">电脑共享 Wi-Fi，手机不耗流量</div>
+        </div>
+        <div class="card p-5">
+          <div class="mb-3 text-[12px] font-semibold" style="color:var(--text-2)">手机网关地址</div>
+          <div class="flex items-center gap-2">
+            <span class="mono text-[16px] font-semibold" style="color:var(--accent)">http://192.168.137.23:8080</span>
+          </div>
+          <div class="flex gap-2 mt-2">
+            <button class="btn btn-secondary btn-xs" onclick="copyText('http://192.168.137.23:8080')">复制</button>
+            <button class="btn btn-secondary btn-xs" onclick="openQr()">二维码</button>
+          </div>
+        </div>
+        <div class="card p-5">
+          <div class="mb-3 text-[12px] font-semibold" style="color:var(--text-2)">电脑热点 IP</div>
+          <div class="flex items-center gap-2"><span class="mono text-[22px] font-bold">192.168.137.1</span></div>
+          <div class="text-[12px] mt-1" style="color:var(--text-3)">Windows 热点网关地址</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-4 mb-4">
+        <!-- 网络信息 -->
+        <div class="card p-5 col-span-1">
+          <div class="text-[12px] font-semibold mb-4" style="color:var(--text-2)">网络信息</div>
+          <div class="space-y-3 text-[13px]">
+            <div class="flex justify-between"><span style="color:var(--text-2)">手机 IP</span><span class="mono font-semibold">192.168.137.23</span></div>
+            <div class="flex justify-between"><span style="color:var(--text-2)">监听端口</span><span class="mono font-semibold">8080</span></div>
+            <div class="flex justify-between"><span style="color:var(--text-2)">连接设备数</span><span class="font-semibold">3</span></div>
+            <div class="flex justify-between"><span style="color:var(--text-2)">移动数据</span><span class="tag tag-green">已关闭</span></div>
+            <div class="flex justify-between"><span style="color:var(--text-2)">Wi-Fi 信号</span><span class="mono">-48 dBm · 强</span></div>
+          </div>
+        </div>
+        <!-- 实时统计 -->
+        <div class="card p-5 col-span-2">
+          <div class="flex items-center justify-between mb-4">
+            <div class="text-[12px] font-semibold" style="color:var(--text-2)">实时统计 · 今日</div>
+            <div class="flex gap-2"><button class="chip active">1H</button><button class="chip">24H</button><button class="chip">7D</button></div>
+          </div>
+          <div class="grid grid-cols-4 gap-4 mb-3">
+            <div><div class="text-[11px]" style="color:var(--text-3)">请求数</div><div class="text-[20px] font-bold">1,234</div></div>
+            <div><div class="text-[11px]" style="color:var(--text-3)">成功率</div><div class="text-[20px] font-bold" style="color:var(--ok)">99.2%</div></div>
+            <div><div class="text-[11px]" style="color:var(--text-3)">平均延迟</div><div class="text-[20px] font-bold" style="color:var(--accent)">38ms</div></div>
+            <div><div class="text-[11px]" style="color:var(--text-3)">流量</div><div class="text-[20px] font-bold">142 MB</div></div>
+          </div>
+          <div class="text-[10px] mb-1" style="color:var(--text-3)">最近 1 小时请求趋势</div>
+          <svg viewBox="0 0 420 90" class="w-full" style="height:70px">
+            <defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="var(--accent)" stop-opacity=".35"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/>
+            </linearGradient></defs>
+            <line x1="0" y1="70" x2="420" y2="70" stroke="var(--divider)" stroke-width="1"/>
+            <path d="M0 78 C35 68 55 60 80 62 C105 64 125 44 150 40 C175 36 195 50 220 44 C245 38 265 52 290 42 C315 32 335 40 360 30 C385 22 402 26 420 20 L420 78 Z" fill="url(#g1)"/>
+            <path d="M0 78 C35 68 55 60 80 62 C105 64 125 44 150 40 C175 36 195 50 220 44 C245 38 265 52 290 42 C315 32 335 40 360 30 C385 22 402 26 420 20" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round"/>
+            <circle cx="360" cy="30" r="3.5" fill="var(--accent)"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <!-- 最近日志 -->
+        <div class="card p-5">
+          <div class="flex items-center justify-between mb-3">
+            <div class="text-[12px] font-semibold" style="color:var(--text-2)">最近日志</div>
+            <button class="btn btn-ghost btn-xs" onclick="go('logs')">查看全部 →</button>
+          </div>
+          <div class="space-y-2">
+            <div class="flex items-center gap-3 text-[12px] py-1" style="border-bottom:1px solid var(--divider)">
+              <span class="mono" style="color:var(--text-3)">10:00:00</span><span class="tag tag-blue">INFO</span><span class="mono" style="color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">GET /api/user/order → 200 · 45ms</span>
+            </div>
+            <div class="flex items-center gap-3 text-[12px] py-1" style="border-bottom:1px solid var(--divider)">
+              <span class="mono" style="color:var(--text-3)">09:59:41</span><span class="tag tag-warn">WARN</span><span class="mono" style="color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">GET /order/* 上游重试 1 次 → 503</span>
+            </div>
+            <div class="flex items-center gap-3 text-[12px] py-1" style="border-bottom:1px solid var(--divider)">
+              <span class="mono" style="color:var(--text-3)">09:59:12</span><span class="tag tag-blue">INFO</span><span class="mono" style="color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">聚合 /api/user/order 完成 · 2 步并行 · 22ms</span>
+            </div>
+            <div class="flex items-center gap-3 text-[12px] py-1" style="border-bottom:1px solid var(--divider)">
+              <span class="mono" style="color:var(--text-3)">09:58:53</span><span class="tag tag-blue">INFO</span><span class="mono" style="color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">GET /user/* → 200 · 12ms</span>
+            </div>
+            <div class="flex items-center gap-3 text-[12px] py-1">
+              <span class="mono" style="color:var(--text-3)">09:58:30</span><span class="tag tag-red">ERROR</span><span class="mono" style="color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">连接手机网关超时 (5s) → 重连</span>
+            </div>
+          </div>
+        </div>
+        <!-- 快捷操作 -->
+        <div class="card p-5">
+          <div class="text-[12px] font-semibold mb-3" style="color:var(--text-2)">快捷操作</div>
+          <div class="grid grid-cols-2 gap-3">
+            <button class="btn btn-primary justify-center h-12" onclick="toggleGateway()"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg><span id="gw-action-text">停止网关</span></button>
+            <button class="btn btn-secondary justify-center h-12" onclick="toast('网关正在重启…','info')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.6-6.3M21 3v6h-6"/></svg>重启网关</button>
+            <button class="btn btn-secondary justify-center h-12" onclick="toast('配置已导出为 gateway.config.json','success')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>导出配置</button>
+            <button class="btn btn-secondary justify-center h-12" onclick="openQr()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M20 14v.01M14 20h.01M18 18h3v3h-3z"/></svg>生成二维码</button>
+          </div>
+          <div class="mt-4 p-3 rounded-lg text-[12px] border" style="border-color:var(--divider);color:var(--text-2)">提示：网关通过电脑热点模式运行时，占用电脑 Wi-Fi 通道，手机移动数据保持关闭。</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 路由管理 ================= -->
+    <section class="page" id="page-routes">
+      <div class="flex items-center justify-between mb-5">
+        <div><div class="sec-title">路由管理</div><div class="sec-sub">配置路径到后端服务的转发规则</div></div>
+        <button class="btn btn-primary" onclick="openModal('modal-route')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          添加路由
+        </button>
+      </div>
+
+      <div class="card overflow-hidden">
+        <div class="flex items-center gap-3 p-4" style="border-bottom:1px solid var(--divider)">
+          <input class="inp" style="max-width:280px" placeholder="搜索路径 / 目标..." oninput="filterTable(this,'route-table')"/>
+          <span style="flex:1"></span>
+          <span class="tag tag-gray">共 <b id="route-count">2</b> 条规则</span>
+        </div>
+        <table class="grid" id="route-table">
+          <thead>
+            <tr><th data-sort="path">路径</th><th>目标地址</th><th>协议适配</th><th data-sort="method">方法</th><th>超时</th><th	data-sort="status">状态</th><th>操作</th></tr>
+          </thead>
+          <tbody>
+            <tr data-path="/user/*" data-method="GET,POST" data-status="1">
+              <td class="mono font-semibold">/user/*</td>
+              <td class="mono">http://127.0.0.1:9001</td>
+              <td><span class="tag tag-green">OpenAI 兼容</span><span class="text-[10px] ml-1" style="color:var(--ok)">✓ 已转 OpenAI 格式</span></td>
+              <td><span class="tag tag-gray">GET · POST</span></td>
+              <td class="mono">5000ms</td>
+              <td><span class="tag tag-green">启用</span></td>
+              <td>
+                <button class="btn btn-ghost btn-xs" onclick="toast('已编辑路由 /user/*','info')">编辑</button>
+                <button class="btn btn-ghost btn-xs" onclick="toggleRowStatus(this)">禁用</button>
+                <button class="btn btn-danger btn-xs" onclick="removeRow(this,'route-count')">删除</button>
+              </td>
+            </tr>
+            <tr data-path="/order/*" data-method="GET" data-status="1">
+              <td class="mono font-semibold">/order/*</td>
+              <td class="mono">http://127.0.0.1:9002</td>
+              <td><span class="tag tag-green">Anthropic</span><span class="text-[10px] ml-1" style="color:var(--ok)">✓ Claude 已转 OpenAI 格式</span></td>
+              <td><span class="tag tag-gray">GET</span></td>
+              <td class="mono">3000ms</td>
+              <td><span class="tag tag-green">启用</span></td>
+              <td>
+                <button class="btn btn-ghost btn-xs" onclick="toast('已编辑路由 /order/*','info')">编辑</button>
+                <button class="btn btn-ghost btn-xs" onclick="toggleRowStatus(this)">禁用</button>
+                <button class="btn btn-danger btn-xs" onclick="removeRow(this,'route-count')">删除</button>
+              </td>
+            </tr>
+            <tr data-path="/api/health" data-method="GET" data-status="1">
+              <td class="mono font-semibold">/api/health</td>
+              <td class="mono">http://127.0.0.1:9000</td>
+              <td><span class="tag tag-green">Google Gemini</span><span class="text-[10px] ml-1" style="color:var(--ok)">✓ 已转 OpenAI 格式</span></td>
+              <td><span class="tag tag-gray">GET</span></td>
+              <td class="mono">1000ms</td>
+              <td><span class="tag tag-green">启用</span></td>
+              <td>
+                <button class="btn btn-ghost btn-xs" onclick="toast('已编辑路由 /api/health','info')">编辑</button>
+                <button class="btn btn-ghost btn-xs" onclick="toggleRowStatus(this)">禁用</button>
+                <button class="btn btn-danger btn-xs" onclick="removeRow(this,'route-count')">删除</button>
+              </td>
+            </tr>
+            <tr data-path="/api/config" data-method="GET,POST" data-status="0">
+              <td class="mono font-semibold">/api/config</td>
+              <td class="mono">http://127.0.0.1:9003</td>
+              <td><span class="tag tag-red">自定义</span><span class="text-[10px] ml-1" style="color:var(--danger)">✕ 响应结构转换失败</span></td>
+              <td><span class="tag tag-gray">GET · POST</span></td>
+              <td class="mono">5000ms</td>
+              <td><span class="tag tag-gray">禁用</span></td>
+              <td>
+                <button class="btn btn-ghost btn-xs" onclick="toast('已编辑路由 /api/config','info')">编辑</button>
+                <button class="btn btn-ghost btn-xs" onclick="toggleRowStatus(this)">启用</button>
+                <button class="btn btn-danger btn-xs" onclick="removeRow(this,'route-count')">删除</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="flex items-center justify-between p-4 text-[12px]" style="color:var(--text-2)">
+          <span>每页 10 条 · 共 4 条</span>
+          <div class="flex gap-1"><button class="btn btn-ghost btn-xs" disabled>上一页</button><button class="btn btn-secondary btn-xs">1</button><button class="btn btn-ghost btn-xs" disabled>下一页</button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= API 聚合 ================= -->
+    <section class="page" id="page-aggregation">
+      <div class="flex items-center justify-between mb-5">
+        <div><div class="sec-title">API 聚合</div><div class="sec-sub">将多个后端服务编排为单一聚合接口</div></div>
+        <button class="btn btn-primary" onclick="openModal('modal-aggregate')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          新建聚合
+        </button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4" id="agg-list">
+        <div class="card p-5" data-agg>
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2"><span class="tag tag-blue">GET</span><span class="font-bold">/api/user/order</span></div>
+            <span class="tag tag-green">运行中</span>
+          </div>
+          <div class="text-[12px]" style="color:var(--text-2)">并行调用用户服务与订单服务，合并响应返回</div>
+          <div class="flex gap-4 mt-3 text-[12px]">
+            <span>步骤 <b>2</b></span><span>最近耗时 <b class="mono">22ms</b></span><span>成功率 <b style="color:var(--ok)">99.6%</b></span>
+          </div>
+          <div class="mt-3" style="border-top:1px solid var(--divider)">
+            <button class="btn btn-ghost btn-xs w-full justify-center mt-2" data-steps-toggle>展开 2 个步骤 ▾</button>
+            <div class="hidden mt-3 space-y-2" data-steps>
+              <div class="flex items-center gap-2 p-2 rounded-md" style="background:var(--divider)">
+                <span class="tag tag-gray">并行</span><span class="mono flex-1">GET /users/:id</span><span style="color:var(--text-3)">→ 127.0.0.1:9001</span>
+              </div>
+              <div class="flex items-center gap-2 p-2 rounded-md" style="background:var(--divider)">
+                <span class="tag tag-gray">并行</span><span class="mono flex-1">GET /orders?uid=:id</span><span style="color:var(--text-3)">→ 127.0.0.1:9002</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex gap-1 mt-3 pt-3" style="border-top:1px solid var(--divider)">
+            <button class="btn btn-ghost btn-xs" onclick="toast('测试成功：200 22ms','success')">测试</button>
+            <button class="btn btn-ghost btn-xs" onclick="toast('已打开聚合详情','info')">详情</button>
+            <button class="btn btn-ghost btn-xs" onclick="toast('已编辑聚合','info')">编辑</button>
+            <span style="flex:1"></span>
+            <button class="btn btn-danger btn-xs" onclick="removeCard(this)">删除</button>
+          </div>
+        </div>
+
+        <div class="card p-5" data-agg>
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2"><span class="tag tag-blue">POST</span><span class="font-bold">/api/checkout</span></div>
+            <span class="tag tag-green">运行中</span>
+          </div>
+          <div class="text-[12px]" style="color:var(--text-2)">串行调用库存 → 支付网关，产出单据与回执</div>
+          <div class="flex gap-4 mt-3 text-[12px]">
+            <span>步骤 <b>3</b></span><span>最近耗时 <b class="mono">148ms</b></span><span>成功率 <b style="color:var(--ok)">98.1%</b></span>
+          </div>
+          <div class="mt-3" style="border-top:1px solid var(--divider)">
+            <button class="btn btn-ghost btn-xs w-full justify-center mt-2" data-steps-toggle>展开 3 个步骤 ▾</button>
+            <div class="hidden mt-3 space-y-2" data-steps>
+              <div class="flex items-center gap-2 p-2 rounded-md" style="background:var(--divider)"><span class="tag tag-gray">串行</span><span class="mono flex-1">POST /stock/check</span><span style="color:var(--text-3)">→ 127.0.0.1:9004</span></div>
+              <div class="flex items-center gap-2 p-2 rounded-md" style="background:var(--divider)"><span class="tag tag-gray">串行</span><span class="mono flex-1">POST /pay/charge</span><span style="color:var(--text-3)">→ 127.0.0.1:9005</span></div>
+              <div class="flex items-center gap-2 p-2 rounded-md" style="background:var(--divider)"><span class="tag tag-gray">串行</span><span class="mono flex-1">POST /order/create</span><span style="color:var(--text-3)">→ 127.0.0.1:9001</span></div>
+            </div>
+          </div>
+          <div class="flex gap-1 mt-3 pt-3" style="border-top:1px solid var(--divider)">
+            <button class="btn btn-ghost btn-xs" onclick="toast('测试成功：200 148ms','success')">测试</button>
+            <button class="btn btn-ghost btn-xs" onclick="toast('已打开聚合详情','info')">详情</button>
+            <button class="btn btn-ghost btn-xs" onclick="toast('已编辑聚合','info')">编辑</button>
+            <span style="flex:1"></span>
+            <button class="btn btn-danger btn-xs" onclick="removeCard(this)">删除</button>
+          </div>
+        </div>
+
+        <div class="card p-5 opacity-60" data-agg>
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2"><span class="tag tag-gray">GET</span><span class="font-bold">/api/user/friends</span></div>
+            <span class="tag tag-gray">已暂停</span>
+          </div>
+          <div class="text-[12px]" style="color:var(--text-2)">聚合用户信息与好友列表，已在调试中暂停</div>
+          <div class="flex gap-4 mt-3 text-[12px]">
+            <span>步骤 <b>2</b></span><span>最近耗时 <b class="mono">—</b></span><span>成功率 <b style="color:var(--text-3)">—</b></span>
+          </div>
+          <div class="mt-3" style="border-top:1px solid var(--divider)">
+            <button class="btn btn-ghost btn-xs w-full justify-center mt-2" data-steps-toggle>展开 2 个步骤 ▾</button>
+            <div class="hidden mt-3 space-y-2" data-steps>
+              <div class="flex items-center gap-2 p-2 rounded-md" style="background:var(--divider)"><span class="tag tag-gray">并行</span><span class="mono flex-1">GET /users/:id</span><span style="color:var(--text-3)">→ 127.0.0.1:9001</span></div>
+              <div class="flex items-center gap-2 p-2 rounded-md" style="background:var(--divider)"><span class="tag tag-gray">并行</span><span class="mono flex-1">GET /friends?uid=:id</span><span style="color:var(--text-3)">→ 127.0.0.1:9006</span></div>
+            </div>
+          </div>
+          <div class="flex gap-1 mt-3 pt-3" style="border-top:1px solid var(--divider)">
+            <button class="btn btn-ghost btn-xs" onclick="toast('该聚合已暂停','warn')">测试</button>
+            <button class="btn btn-ghost btn-xs" onclick="toast('已打开聚合详情','info')">详情</button>
+            <button class="btn btn-ghost btn-xs" onclick="toast('已编辑聚合','info')">编辑</button>
+            <span style="flex:1"></span>
+            <button class="btn btn-danger btn-xs" onclick="removeCard(this)">删除</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 日志 ================= -->
+    <section class="page" id="page-logs">
+      <div class="flex items-center justify-between mb-5">
+        <div><div class="sec-title">日志</div><div class="sec-sub">实时滚动请求与系统日志</div></div>
+        <div class="flex gap-2">
+          <button class="btn btn-secondary" id="btn-log-pause" onclick="toggleLogPause()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>暂停
+          </button>
+          <button class="btn btn-secondary" onclick="toast('日志已清空','info')">清空</button>
+          <button class="btn btn-primary" onclick="toast('日志已导出 log.txt','success')">导出</button>
+        </div>
+      </div>
+
+      <div class="card overflow-hidden">
+        <div class="flex items-center gap-2 p-3" style="border-bottom:1px solid var(--divider);flex-wrap:wrap">
+          <button class="chip" data-lvl="INFO">INFO</button>
+          <button class="chip" data-lvl="WARN">WARN</button>
+          <button class="chip" data-lvl="ERROR">ERROR</button>
+          <span style="width:1px" class="self-stretch" ></span>
+          <input class="inp" style="max-width:260px" placeholder="搜索路径 / 关键字…" oninput="filterLogs(this.value)"/>
+          <span style="flex:1"></span>
+          <span class="tag tag-gray"><span id="log-live" class="dot dot-green mr-1"></span>实时</span>
+        </div>
+        <div class="scrollbar" style="height:440px;overflow:auto">
+          <table class="grid" id="log-table">
+            <thead><tr class="sticky top-0" style="background:var(--card)"><th>时间</th><th data-sort="lvl">级别</th><th data-sort="channel">通道</th><th>路径</th><th>状态码</th><th data-sort="ms">耗时</th><th>消息</th></tr></thead>
+            <tbody id="log-body">
+              <tr data-lvl="INFO"><td class="mono" style="color:var(--text-3)">10:00:00</td><td><span class="tag tag-blue">INFO</span></td><td>http</td><td class="mono">/api/user/order</td><td class="mono" style="color:var(--ok)">200</td><td class="mono">45ms</td><td>聚合完成</td></tr>
+              <tr data-lvl="WARN"><td class="mono" style="color:var(--text-3)">09:59:41</td><td><span class="tag tag-warn">WARN</span></td><td>http</td><td class="mono">/order/*</td><td class="mono" style="color:var(--warn)">503</td><td class="mono">120ms</td><td>上游重试 1 次后成功</td></tr>
+              <tr data-lvl="INFO"><td class="mono" style="color:var(--text-3)">09:59:12</td><td><span class="tag tag-blue">INFO</span></td><td>agg</td><td class="mono">/api/user/order</td><td class="mono" style="color:var(--ok)">200</td><td class="mono">22ms</td><td>并行步骤均成功</td></tr>
+              <tr data-lvl="INFO"><td class="mono" style="color:var(--text-3)">09:58:53</td><td><span class="tag tag-blue">INFO</span></td><td>http</td><td class="mono">/user/*</td><td class="mono" style="color:var(--ok)">200</td><td class="mono">12ms</td><td>转发成功</td></tr>
+              <tr data-lvl="ERROR"><td class="mono" style="color:var(--text-3)">09:58:30</td><td><span class="tag tag-red">ERROR</span></td><td>net</td><td class="mono">—</td><td class="mono">—</td><td class="mono">5s</td><td>连接手机网关超时，自动重连</td></tr>
+              <tr data-lvl="INFO"><td class="mono" style="color:var(--text-3)">09:57:44</td><td><span class="tag tag-blue">INFO</span></td><td>http</td><td class="mono">/api/health</td><td class="mono" style="color:var(--ok)">200</td><td class="mono">8ms</td><td>健康检查</td></tr>
+              <tr data-lvl="WARN"><td class="mono" style="color:var(--text-3)">09:56:10</td><td><span class="tag tag-warn">WARN</span></td><td>hotspot</td><td class="mono">—</td><td class="mono">—</td><td class="mono">—</td><td>移动数据已自动关闭</td></tr>
+              <tr data-lvl="INFO"><td class="mono" style="color:var(--text-3)">09:55:02</td><td><span class="tag tag-blue">INFO</span></td><td>ble</td><td class="mono">—</td><td class="mono">—</td><td class="mono">3ms</td><td>BLE 广播已对外可见</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="flex items-center justify-between p-3 text-[12px]" style="color:var(--text-2)">
+          <span>共 <b>8</b> 条 · 自动滚动</span>
+          <div class="flex gap-1"><button class="btn btn-ghost btn-xs" disabled>上一页</button><button class="btn btn-secondary btn-xs">1</button><button class="btn btn-ghost btn-xs">2</button><button class="btn btn-ghost btn-xs">下一页</button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 统计 ================= -->
+    <section class="page" id="page-stats">
+      <div class="flex items-center justify-between mb-5">
+        <div><div class="sec-title">统计</div><div class="sec-sub">网关流量与性能分析</div></div>
+        <div class="flex gap-2">
+          <button class="chip active">按小时</button><button class="chip">按天</button><button class="chip">按周</button>
+          <button class="btn btn-secondary ml-2" onclick="toast('以 PNG 导出统计','success')">导出</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-4 mb-4">
+        <div class="card p-5 col-span-2">
+          <div class="text-[12px] font-semibold mb-3" style="color:var(--text-2)">请求量趋势（近 24 小时）</div>
+          <svg viewBox="0 0 520 150" class="w-full" style="height:150px">
+            <defs><linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="var(--accent)" stop-opacity=".30"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
+            <g stroke="var(--divider)" stroke-width="1">
+              <line x1="0" y1="30" x2="520" y2="30"/><line x1="0" y1="70" x2="520" y2="70"/><line x1="0" y1="110" x2="520" y2="110"/>
+            </g>
+            <path d="M0 125 C20 122 30 118 45 116 C60 114 72 100 88 98 C104 96 116 106 132 100 C148 94 160 84 176 80 C192 76 206 88 220 74 C234 60 250 66 264 58 C278 50 294 58 308 48 C322 38 340 44 354 34 C368 24 384 30 396 22 C408 14 430 18 442 12 C454 6 476 10 486 8 L520 2 L520 150 L0 150 Z" fill="url(#g2)"/>
+            <path d="M0 125 C20 122 30 118 45 116 C60 114 72 100 88 98 C104 96 116 106 132 100 C148 94 160 84 176 80 C192 76 206 88 220 74 C234 60 250 66 264 58 C278 50 294 58 308 48 C322 38 340 44 354 34 C368 24 384 30 396 22 C408 14 430 18 442 12 C454 6 476 10 486 8 L520 2" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round"/>
+          </svg>
+          <div class="flex justify-between text-[10px] mt-1" style="color:var(--text-3)">
+            <span>00:00</span><span>04:00</span><span>08:00</span><span>12:00</span><span>16:00</span><span>20:00</span><span>现在</span>
+          </div>
+        </div>
+        <div class="card p-5">
+          <div class="text-[12px] font-semibold mb-3" style="color:var(--text-2)">错误率分布</div>
+          <div class="flex items-center gap-6">
+            <svg viewBox="0 0 100 100" style="width:120px;height:120px;transform:rotate(-90deg)">
+              <circle cx="50" cy="50" r="40" fill="none" stroke="var(--divider)" stroke-width="13"/>
+              <circle cx="50" cy="50" r="40" fill="none" stroke="var(--ok)" stroke-width="13" stroke-dasharray="238 251" stroke-linecap="round"/>
+              <circle cx="50" cy="50" r="40" fill="none" stroke="var(--warn)" stroke-width="13" stroke-dasharray="8 251" stroke-dashoffset="-238" stroke-linecap="round"/>
+              <circle cx="50" cy="50" r="40" fill="none" stroke="var(--danger)" stroke-width="13" stroke-dasharray="5 251" stroke-dashoffset="-246" stroke-linecap="round"/>
+            </svg>
+            <div class="space-y-2 text-[12px]">
+              <div class="flex items-center gap-2"><span class="dot" style="background:var(--ok)"></span>正常 <b>99.2%</b></div>
+              <div class="flex items-center gap-2"><span class="dot" style="background:var(--warn)"></span>警告 <b>0.5%</b></div>
+              <div class="flex items-center gap-2"><span class="dot" style="background:var(--danger)"></span>错误 <b>0.3%</b></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-4 mb-4">
+        <div class="card p-5">
+          <div class="text-[12px] font-semibold mb-3" style="color:var(--text-2)">流量统计</div>
+          <div class="flex items-end gap-8">
+            <div><div class="text-[11px]" style="color:var(--text-3)">上行</div><div class="text-[22px] font-bold mono" style="color:var(--accent)">48.2 MB</div><div class="text-[11px]" style="color:var(--ok)">↑ 4.1%</div></div>
+            <div><div class="text-[11px]" style="color:var(--text-3)">下行</div><div class="text-[22px] font-bold mono">93.8 MB</div><div class="text-[11px]" style="color:var(--ok)">↑ 8.7%</div></div>
+          </div>
+        </div>
+        <div class="card p-5 col-span-2">
+          <div class="text-[12px] font-semibold mb-3" style="color:var(--text-2)">聚合链路耗时（各聚合 API）</div>
+          <div class="space-y-2.5 text-[12px]">
+            <div><div class="flex justify-between mb-1"><span class="mono">/api/checkout</span><span style="color:var(--text-2)">148ms</span></div><div class="h-2 rounded bg" style="background:var(--divider)"><div class="h-2 rounded" style="width:100%;background:var(--accent)"></div></div></div>
+            <div><div class="flex justify-between mb-1"><span class="mono">/api/user/order</span><span style="color:var(--text-2)">22ms</span></div><div class="h-2 rounded" style="background:var(--divider)"><div class="h-2 rounded" style="width:42%;background:var(--ok)"></div></div></div>
+            <div><div class="flex justify-between mb-1"><span class="mono">/api/user/friends</span><span style="color:var(--text-2)">18ms</span></div><div class="h-2 rounded" style="background:var(--divider)"><div class="h-2 rounded" style="width:34%;background:var(--ok)"></div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card overflow-hidden">
+        <div class="p-4 text-[12px] font-semibold" style="border-bottom:1px solid var(--divider);color:var(--text-2)">TOP API 排行榜</div>
+        <table class="grid">
+          <thead><tr><th>#</th><th>接口</th><th>请求数</th><th>成功率</th><th>平均耗时</th><th>累计流量</th></tr></thead>
+          <tbody>
+            <tr><td class="tag tag-gray">1</td><td class="mono font-semibold">/api/user/order</td><td>486</td><td style="color:var(--ok)">99.6%</td><td class="mono">22ms</td><td class="mono">6.4 MB</td></tr>
+            <tr><td class="tag tag-gray">2</td><td class="mono font-semibold">/order/*</td><td>312</td><td style="color:var(--ok)">99.0%</td><td class="mono">54ms</td><td class="mono">4.1 MB</td></tr>
+            <tr><td class="tag tag-gray">3</td><td class="mono font-semibold">/user/*</td><td>289</td><td style="color:var(--ok)">99.7%</td><td class="mono">12ms</td><td class="mono">2.8 MB</td></tr>
+            <tr><td class="tag tag-gray">4</td><td class="mono font-semibold">/api/checkout</td><td>176</td><td style="color:var(--ok)">98.1%</td><td class="mono">148ms</td><td class="mono">3.3 MB</td></tr>
+            <tr><td class="tag tag-gray">5</td><td class="mono font-semibold">/api/health</td><td>121</td><td style="color:var(--ok)">100%</td><td class="mono">8ms</td><td class="mono">0.2 MB</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ================= 设置 ================= -->
+    <section class="page" id="page-settings">
+      <div class="flex items-center justify-between mb-5">
+        <div><div class="sec-title">设置</div><div class="sec-sub">网关运行参数与安全配置</div></div>
+        <div class="flex gap-2">
+          <button class="btn btn-secondary" onclick="toast('已导入配置','success')">导入配置</button>
+          <button class="btn btn-primary" onclick="toast('设置已保存并应用','success')">保存</button>
+          <button class="btn btn-danger" onclick="toast('已重置为默认值','warn')">重置</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <!-- 基础设置 -->
+        <div class="card p-5">
+          <div class="text-[12px] font-semibold mb-4" style="color:var(--text-2)">基础设置</div>
+          <div class="space-y-4">
+            <div><label class="lbl">监听端口</label><input class="inp mono" value="8080"/></div>
+            <div class="flex items-center justify-between"><div><div class="font-semibold text-[13px]">启用 HTTPS</div><div class="text-[11px]" style="color:var(--text-3)">使用自签名证书提供 TLS</div></div><label class="switch"><input type="checkbox"><span class="track"><span class="knob"></span></span></label></div>
+            <div class="flex items-center justify-between"><div><div class="font-semibold text-[13px]">启用 mDNS</div><div class="text-[11px]" style="color:var(--text-3)">通过 mobile-gateway.local 访问</div></div><label class="switch"><input type="checkbox" checked><span class="track"><span class="knob"></span></span></label></div>
+            <div><label class="lbl">API Key</label><input class="inp mono" value="gw_live_••••••••••••••••" onclick="this.select()"/></div>
+            <div><label class="lbl">IP 白名单（每行一个）</label><textarea class="inp mono" rows="3">192.168.137.1
+192.168.137.0/24</textarea></div>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <!-- 蓝牙 -->
+          <div class="card p-5">
+            <div class="text-[12px] font-semibold mb-4" style="color:var(--text-2)">蓝牙设置</div>
+            <div class="space-y-4">
+              <div class="flex items-center justify-between"><div><div class="font-semibold text-[13px]">启用蓝牙 BLE</div><div class="text-[11px]" style="color:var(--text-3)">通过网络低功耗蓝牙广播配置接口</div></div><label class="switch"><input type="checkbox"><span class="track"><span class="knob"></span></span></label></div>
+              <div><label class="lbl">服务 UUID</label><input class="inp mono" value="0000ffe0-0000-1000-8000-00805f9b34fb"/></div>
+              <div><label class="lbl">加密方式</label>
+                <select class="sel"><option>无加密</option><option selected>Just Works</option><option>Passkey</option><option>LE Secure</option></select>
+              </div>
+            </div>
+          </div>
+          <!-- 热点模式 -->
+          <div class="card p-5">
+            <div class="text-[12px] font-semibold mb-4" style="color:var(--text-2)">电脑热点模式</div>
+            <div class="space-y-3">
+              <div class="flex items-center justify-between"><div><div class="font-semibold text-[13px]">自动检测电脑热点</div><div class="text-[11px]" style="color:var(--text-3)">识别 SSID 后自动切换到热点接口</div></div><label class="switch"><input type="checkbox" checked><span class="track"><span class="knob"></span></span></label></div>
+              <div class="flex items-center justify-between"><div><div class="font-semibold text-[13px]">优先使用热点接口</div><div class="text-[11px]" style="color:var(--text-3)">热点可用时优先走 Wi-Fi</div></div><label class="switch"><input type="checkbox" checked><span class="track"><span class="knob"></span></span></label></div>
+              <div class="flex items-center justify-between"><div><div class="font-semibold text-[13px]">关闭移动数据提醒</div><div class="text-[11px]" style="color:var(--text-3)">自动关闭移动数据时发通知</div></div><label class="switch"><input type="checkbox" checked><span class="track"><span class="knob"></span></span></label></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 关于 ================= -->
+    <section class="page" id="page-about">
+      <div class="max-w-2xl">
+        <div class="card p-8 text-center">
+          <div class="mx-auto w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style="background:var(--accent);box-shadow:0 8px 30px rgba(0,120,212,.45)">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M6 12h3l2-5 3 9 2-4h2" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="text-[20px] font-bold">个人移动聚合网关</div>
+          <div class="text-[13px] mt-1" style="color:var(--text-2)">Personal Mobile Aggregation Gateway</div>
+          <div class="flex gap-2 justify-center mt-4">
+            <span class="tag tag-blue">v0.9.1</span><span class="tag tag-gray">Apache-2.0</span>
+          </div>
+          <div class="mt-6 p-4 rounded-lg text-left text-[13px] leading-relaxed border" style="border-color:var(--divider);color:var(--text)">
+            <b>项目简介：</b>在 Android 手机上运行的轻量级聚合网关。手机连接电脑开启的移动热点，网关监听 <span class="mono">0.0.0.0:8080</span>，聚合多个本地端口与第三方 API，供电脑局域网内通过浏览器访问管理。当前默认运行于<b>电脑热点模式</b>，手机不消耗移动数据。
+            <div class="mt-3 text-[12px]" style="color:var(--text-2)">功能：路径路由 · API 编排聚合 · 实时日志 · 流量统计 · BLE 广播 · API Key 鉴权 · IP 白名单。</div>
+          </div>
+          <div class="mt-6 flex gap-3 justify-center">
+            <button class="btn btn-primary" onclick="toast('已复制项目地址','success')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-4 0-6-1.5-6-4s2-4 6-4c4 0 6 1.5 6 4s-2 4-6 4zM9 12V5l12-2v8"/></svg>复制项目地址</button>
+            <button class="btn btn-secondary" onclick="openQr()">项目二维码</button>
+          </div>
+          <div class="mt-8 text-[11px]" style="color:var(--text-3)">Built on Windows 11 Fluent Design · Segoe UI</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ================= 底部状态栏 ================= -->
+<footer class="acrylic fixed bottom-0 left-0 right-0 z-40 border-t" style="height:54px;border-radius:0">
+  <div class="flex items-center justify-between px-5 h-full text-[12px]" style="color:var(--text-2)">
+    <div class="flex items-center gap-5">
+      <span class="flex items-center gap-1.5"><span class="dot dot-green"></span>手机 IP <b class="mono" style="color:var(--text)">192.168.137.23</b></span>
+      <span>端口 <b class="mono" style="color:var(--text)">8080</b></span>
+      <span>运行时长 <b class="mono" style="color:var(--text)">06:23:41</b></span>
+      <span>版本 <b class="mono" style="color:var(--text)">v0.9.1</b></span>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="mono" style="color:var(--text-3)">uptime 99.84%</span>
+      <button class="btn btn-ghost btn-xs" onclick="toast('诊断报告已生成','info')">诊断</button>
+    </div>
+  </div>
+</footer>
+
+<!-- ================= 模态框：添加路由 ================= -->
+<div class="modal-backdrop" id="modal-route">
+  <div class="modal p-6" style="width:920px;max-width:96vw">
+    <div class="flex items-center justify-between mb-5">
+      <div class="text-[16px] font-bold">添加路由</div>
+      <button class="icon-btn" onclick="closeModal('modal-route')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+<div class="grid grid-cols-[1fr_250px] gap-5">
+      <!-- 主栏 -->
+      <div class="space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div><label class="lbl">路径规则</label><input class="inp mono" id="route-path" placeholder="/example/*"/></div>
+          <div><label class="lbl">目标 URL</label><input class="inp mono" id="route-url" placeholder="http://127.0.0.1:9000"/></div>
+        </div>
+
+        <!-- 平台预设 -->
+        <div>
+          <label class="lbl">平台预设（选择后自动匹配协议类型）</label>
+          <div class="flex gap-2" id="platform-chips">
+            <button type="button" class="chip active" data-proto="自定义">自定义</button>
+            <button type="button" class="chip" data-proto="OpenAI 兼容">ChatGPT</button>
+            <button type="button" class="chip" data-proto="Anthropic">Claude</button>
+            <button type="button" class="chip" data-proto="Google Gemini">Gemini</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="lbl">协议类型</label>
+            <select class="sel" id="route-proto">
+              <option value="OpenAI 兼容">OpenAI 兼容</option>
+              <option value="Anthropic">Anthropic</option>
+              <option value="Google Gemini">Google Gemini</option>
+              <option value="自定义" selected>自定义</option>
+            </select>
+          </div>
+          <div>
+            <label class="lbl">默认模型</label>
+            <input class="inp mono" id="route-model" placeholder="gpt-4o-mini" list="model-suggest"/>
+            <datalist id="model-suggest"></datalist>
+          </div>
+        </div>
+
+        <!-- 强制转换开关 -->
+        <div class="flex items-center justify-between p-3 rounded-lg border" style="border-color:var(--divider)">
+          <div>
+            <div class="font-semibold text-[13px]">强制转为 OpenAI 格式</div>
+            <div class="text-[11px]" style="color:var(--text-3)">网关将平台请求与响应统一转换为 OpenAI 兼容结构</div>
+          </div>
+          <label class="switch"><input type="checkbox" checked id="route-force"><span class="track"><span class="knob"></span></span></label>
+        </div>
+
+        <!-- 拉取模型 -->
+        <div>
+          <button type="button" class="btn btn-secondary w-full" onclick="testAndPullModels()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.6-6.3M21 3v6h-6"/></svg>
+            测试并拉取模型
+          </button>
+          <div id="pull-result" class="hidden mt-2"></div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-4">
+          <div><label class="lbl">方法</label><select class="sel" id="route-method"><option>GET</option><option>POST</option><option>PUT</option><option>DELETE</option><option>匹配全部</option></select></div>
+          <div><label class="lbl">超时 (ms)</label><input class="inp mono" id="route-timeout" value="5000"/></div>
+          <div><label class="lbl">重试次数</label><input class="inp mono" id="route-retry" value="1"/></div>
+        </div>
+
+        <!-- 限流配置 -->
+        <div class="rounded-lg border p-3" style="border-color:var(--divider)">
+          <div class="flex items-center gap-3">
+            <label class="lbl mb-0" style="width:80px">限流配置</label>
+            <input class="inp mono" id="route-qps" value="50" style="max-width:110px"/>
+            <span class="tag tag-blue">QPS</span>
+            <span style="flex:1"></span>
+            <span class="text-[11px]" style="color:var(--text-3)">超出进入队列，等待窗口释放</span>
+          </div>
+        </div>
+
+        <!-- 多 API Key 表格 -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <div>
+              <label class="lbl mb-0">多 API Key（Key + 权重）</label>
+              <div class="text-[11px]" style="color:var(--text-3)">按权重轮询分配请求，权重越高命中越多</div>
+            </div>
+            <button type="button" class="btn btn-secondary btn-xs" onclick="addApiKeyRow()">+ 添加 Key</button>
+          </div>
+          <table class="grid">
+            <thead><tr><th style="width:40px">#</th><th>API Key</th><th style="width:90px">权重</th><th style="width:60px">操作</th></tr></thead>
+            <tbody id="apikey-rows">
+              <tr>
+                <td><span class="tag tag-gray">1</span></td>
+                <td><input class="inp mono" style="font-size:12px" value="sk-live-••••••••••a1B2C3"/></td>
+                <td><input class="inp mono" style="width:70px;font-size:12px" value="60"/></td>
+                <td><button class="btn btn-danger btn-xs" onclick="removeApiKeyRow(this)">删除</button></td>
+              </tr>
+              <tr>
+                <td><span class="tag tag-gray">2</span></td>
+                <td><input class="inp mono" style="font-size:12px" value="sk-live-••••••••••d4E5F6"/></td>
+                <td><input class="inp mono" style="width:70px;font-size:12px" value="30"/></td>
+                <td><button class="btn btn-danger btn-xs" onclick="removeApiKeyRow(this)">删除</button></td>
+              </tr>
+              <tr>
+                <td><span class="tag tag-gray">3</span></td>
+                <td><input class="inp mono" style="font-size:12px" value="sk-live-••••••••••g7H8I9"/></td>
+                <td><input class="inp mono" style="width:70px;font-size:12px" value="10"/></td>
+                <td><button class="btn btn-danger btn-xs" onclick="removeApiKeyRow(this)">删除</button></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="flex items-center gap-2 mt-2 text-[11px]" style="color:var(--text-3)">
+            <span class="dot" style="background:var(--ok)"></span>当前权重 60 / 30 / 10 · 单 Key 故障自动剔除并重试
+          </div>
+        </div>
+      </div>
+
+      <!-- 侧边栏：系统提示词注入 + 缓存 -->
+      <div class="space-y-4" style="border-left:1px solid var(--divider);padding-left:16px">
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <label class="lbl mb-0">系统提示词注入</label>
+            <label class="switch"><input type="checkbox" checked id="route-prompt-sw"><span class="track"><span class="knob"></span></span></label>
+          </div>
+          <div class="text-[11px] mb-1" style="color:var(--text-3)">附加到每次请求的 system 消息，随协议转换自动适配</div>
+          <textarea class="inp mono" id="route-prompt" rows="7" style="font-size:12px;resize:vertical">你是一个由个人移动聚合网关调度的 AI 助手。
+遵循 JSON 输出约定，仅返回结构化结果。
+不要提及内部网关配置。</textarea>
+        </div>
+
+        <div class="flex items-center justify-between p-3 rounded-lg border" style="border-color:var(--divider)">
+          <div>
+            <div class="font-semibold text-[13px]">响应缓存</div>
+            <div class="text-[11px]" style="color:var(--text-3)">相同请求命中缓存，降低 Token 消耗</div>
+          </div>
+          <label class="switch"><input type="checkbox" checked id="route-cache"><span class="track"><span class="knob"></span></span></label>
+        </div>
+
+        <div>
+          <label class="lbl">缓存 TTL（秒）</label>
+          <input class="inp mono" id="route-cache-ttl" value="300"/>
+        </div>
+
+        <div class="p-3 rounded-lg text-[11px] leading-relaxed" style="background:var(--accent-soft);color:var(--text-2)">
+          侧边栏配置对该路由全局生效。<b style="color:var(--accent)">缓存命中不计费</b>，可显著降低 Token 消耗。
+        </div>
+      </div>
+    </div>
+
+    <div class="flex justify-end gap-2 pt-3 mt-5" style="border-top:1px solid var(--divider)">
+      <button class="btn btn-secondary" onclick="openTestModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h7l-1 8 11-12h-7l0-8z"/></svg>
+        测试接口
+      </button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-route')">取消</button>
+      <button class="btn btn-primary" onclick="addRoute()">保存路由</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 模态框：测试接口（多列：请求/响应/Token 消耗） ================= -->
+<div class="modal-backdrop" id="modal-test">
+  <div class="modal p-6" style="width:980px;max-width:96vw">
+    <div class="flex items-center justify-between mb-1">
+      <div class="flex items-center gap-3">
+        <div class="text-[16px] font-bold">测试接口</div>
+        <span class="tag tag-green" id="test-result-tag">通过</span>
+        <span class="text-[12px] mono" style="color:var(--text-3)" id="test-endpoint">POST /example/*</span>
+      </div>
+      <button class="icon-btn" onclick="closeModal('modal-test')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="text-[12px] mb-4 flex items-center gap-2" style="color:var(--text-2)">
+      模拟一次真实跨协议调用 · 平台 <span class="tag tag-blue" id="test-proto">Anthropic · claude-3-5-sonnet</span>
+      <span>总耗时 <b class="mono">148ms</b></span>
+    </div>
+
+    <!-- 三列展示 -->
+    <div class="grid grid-cols-3 gap-4">
+      <!-- 请求 -->
+      <div class="rounded-lg border" style="border-color:var(--divider)">
+        <div class="flex items-center justify-between px-3 py-2 text-[12px] font-semibold" style="border-bottom:1px solid var(--divider);color:var(--text-2)">
+          <span>请求 Request</span><span class="tag tag-gray">curl</span>
+        </div>
+        <div class="p-3">
+          <pre class="mono text-[11px] leading-relaxed scrollbar" style="color:var(--text);white-space:pre-wrap;height:230px;overflow:auto">POST /v1/messages
+Authorization: Bearer sk-***
+anthropic-version: 2023-06-01
+
+{ "model": "claude-3-5-sonnet",
+  "max_tokens": 1024,
+  "system": "由网关注入的系统提示词…",
+  "messages": [
+    {"role":"user","content":"查询订单详情"}
+  ]
+}</pre>
+        </div>
+      </div>
+      <!-- 响应 -->
+      <div class="rounded-lg border" style="border-color:var(--divider)">
+        <div class="flex items-center justify-between px-3 py-2 text-[12px] font-semibold" style="border-bottom:1px solid var(--divider);color:var(--text-2)">
+          <span>响应 Response</span><span class="tag tag-green">200 · 已转 OpenAI</span>
+        </div>
+        <div class="p-3">
+          <pre class="mono text-[11px] leading-relaxed scrollbar" style="color:var(--text);white-space:pre-wrap;height:230px;overflow:auto">{ "id": "msg_01Hx…",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {"type":"text","text":"订单 #A-1024 已发货…"}
+  ],
+  "usage": { "input_tokens": 384,
+             "output_tokens": 96 } }
+
+→ 已转换为 OpenAI choices[] 结构</pre>
+        </div>
+      </div>
+      <!-- Token 消耗 -->
+      <div class="rounded-lg border" style="border-color:var(--divider)">
+        <div class="flex items-center justify-between px-3 py-2 text-[12px] font-semibold" style="border-bottom:1px solid var(--divider);color:var(--text-2)">
+          <span>Token 消耗</span><span class="tag tag-blue" id="test-token-tag">480 tokens</span>
+        </div>
+        <div class="p-3">
+          <div class="flex items-end justify-between mb-2">
+            <div><div class="text-[22px] font-bold mono">480</div><div class="text-[11px]" style="color:var(--text-3)">合计 tokens</div></div>
+            <span class="tag tag-green">缓存未命中</span>
+          </div>
+          <div class="space-y-2.5">
+            <div>
+              <div class="flex justify-between text-[11px] mb-1"><span style="color:var(--text-2)">输入</span><span class="mono">384</span></div>
+              <div class="h-2 rounded" style="background:var(--divider)"><div class="h-2 rounded" style="width:80%;background:var(--accent)"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between text-[11px] mb-1"><span style="color:var(--text-2)">输出</span><span class="mono">96</span></div>
+              <div class="h-2 rounded" style="background:var(--divider)"><div class="h-2 rounded" style="width:20%;background:var(--ok)"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between text-[11px] mb-1"><span style="color:var(--text-2)">系统提示词（注入）</span><span class="mono">+60</span></div>
+              <div class="h-2 rounded" style="background:var(--divider)"><div class="h-2 rounded" style="width:12%;background:var(--warn)"></div></div>
+            </div>
+          </div>
+          <div class="mt-3 p-2.5 rounded-lg text-[11px]" style="background:var(--accent-soft);color:var(--text-2)">
+            预估费用 <b class="mono" style="color:var(--text)">≈ $0.0047</b> · 命中缓存可节约 <b style="color:var(--accent)">80%</b>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-between mt-5 pt-3" style="border-top:1px solid var(--divider)">
+      <div class="text-[11px] flex items-center gap-2" style="color:var(--text-3)">
+        <span class="dot dot-green"></span>协议转换成功 · 请求 & 响应均按 OpenAI 格式校验
+      </div>
+      <div class="flex gap-2">
+        <button class="btn btn-secondary" onclick="closeModal('modal-test')">关闭</button>
+        <button class="btn btn-primary" onclick="toast('已保存为测试示例','success')">保存为示例</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 模态框：新建聚合（编排） ================= -->
+<div class="modal-backdrop" id="modal-aggregate">
+  <div class="modal p-6" style="width:640px">
+    <div class="flex items-center justify-between mb-1">
+      <div class="text-[16px] font-bold">新建聚合接口</div>
+      <button class="icon-btn" onclick="closeModal('modal-aggregate')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="text-[12px] mb-4" style="color:var(--text-3)">可视化编排多个后端服务为单一接口</div>
+    <div class="space-y-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="lbl">聚合路径</label><input class="inp mono" value="/api/user/order"/></div>
+        <div><label class="lbl">方法</label><select class="sel"><option>GET</option><option>POST</option></select></div>
+      </div>
+      <div>
+        <div class="flex items-center justify-between mb-2"><label class="lbl mb-0">编排步骤</label><button class="btn btn-secondary btn-xs" onclick="addStep()">+ 添加步骤</button></div>
+        <div id="step-list" class="space-y-2"></div>
+      </div>
+      <div>
+        <label class="lbl">响应字段映射</label>
+        <textarea class="inp mono" rows="2" style="font-size:12px">user: {$.steps[0].data}
+orders: {$.steps[1].data.list}</textarea>
+      </div>
+      <div id="agg-test-result" class="hidden rounded-lg border p-3" style="border-color:var(--divider)"></div>
+      <div class="flex items-center justify-between"><div class="font-semibold text-[13px]">步骤执行方式</div>
+        <div class="flex gap-2"><span class="chip active">并行</span><span class="chip">串行</span></div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button class="btn btn-secondary" onclick="testAggregate()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h7l-1 8 11-12h-7l0-8z"/></svg>
+          测试聚合
+        </button>
+        <button class="btn btn-secondary" onclick="closeModal('modal-aggregate')">取消</button>
+        <button class="btn btn-primary" onclick="closeModal('modal-aggregate');toast('聚合接口已创建','success')">创建聚合</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 模态框：二维码 ================= -->
+<div class="modal-backdrop" id="modal-qr">
+  <div class="modal p-6" style="width:360px">
+    <div class="flex items-center justify-between mb-4">
+      <div class="text-[16px] font-bold">连接二维码</div>
+      <button class="icon-btn" id="qr-close" onclick="closeModal('modal-qr')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="flex justify-center"><svg id="qr-svg" viewBox="0 0 25 25" style="width:220px;height:220px"></svg></div>
+    <div class="mono text-center mt-4" style="color:var(--text-2)">http://192.168.137.23:8080</div>
+    <div class="flex gap-2 mt-4">
+      <button class="btn btn-secondary flex-1" onclick="copyText('http://192.168.137.23:8080')">复制地址</button>
+      <button class="btn btn-primary flex-1" onclick="toast('二维码已下载','success')">下载</button>
+    </div>
+  </div>
+</div>
+
+<!-- 通知 Toast -->
+<div id="toast-wrap"></div>
+
+<script>
+/* ================= 主题切换 ================= */
+const root = document.documentElement;
+function applyTheme(t){ root.setAttribute('data-theme', t); localStorage.setItem('gw-theme', t);
+  document.getElementById('icon-sun').classList.toggle('hidden', t==='dark');
+  document.getElementById('icon-moon').classList.toggle('hidden', t!=='dark'); }
+applyTheme(localStorage.getItem('gw-theme') || 'light');
+document.getElementById('btn-theme').addEventListener('click', ()=> applyTheme(root.getAttribute('data-theme')==='dark'?'light':'dark'));
+
+/* ================= Toast ================= */
+function toast(msg, type='info'){
+  const colors = { success:'var(--ok)', warn:'var(--warn)', danger:'var(--danger)', info:'var(--accent)' };
+  const cust = { success:'<path d="M20 6 9 17l-5-5"/>', warn:'<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>',
+    info:'<circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/>' };
+  const wrap = document.getElementById('toast-wrap');
+  const el = document.createElement('div'); el.className='toast';
+  el.innerHTML = '<span class="ic" style="background:'+colors[type]+'"></span><span>'+msg+'</span>';
+  const ico = el.querySelector('.ic'); ico.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4">'+(cust[type]||cust.info)+'</svg>';
+  wrap.appendChild(el);
+  setTimeout(()=>{ el.classList.add('hide'); setTimeout(()=> el.remove(), 220); }, 2600);
+}
+
+/* ================= 导航 ================= */
+function go(page){
+  document.querySelectorAll('.page').forEach(p=> p.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=> n.classList.toggle('active', n.dataset.page===page));
+}
+document.querySelectorAll('.nav-item').forEach(n=> n.addEventListener('click', ()=> go(n.dataset.page)));
+
+/* ================= 模态框 ================= */
+function openModal(id){ document.getElementById(id).classList.add('show');
+  document.addEventListener('keydown', escHandle); }
+function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+function escHandle(e){ if(e.key==='Escape'){ document.querySelectorAll('.modal-backdrop.show').forEach(m=> m.classList.remove('show')); document.removeEventListener('keydown', escHandle); } }
+document.querySelectorAll('.modal-backdrop').forEach(m=> m.addEventListener('click', e=> { if(e.target===m) closeModal(m.id); }));
+
+/* ================= 复制 ================= */
+function copyText(t){ navigator.clipboard && navigator.clipboard.writeText(t); toast('已复制：'+t, 'success'); }
+
+/* ================= 网关开关 ================= */
+let gwRunning = true;
+function toggleGateway(){
+  gwRunning = !gwRunning;
+  document.getElementById('gw-switch').checked = gwRunning;
+  document.getElementById('gw-state-text').textContent = gwRunning ? '运行中':'已停止';
+  document.getElementById('gw-state-dot').className = 'dot ' + (gwRunning ? 'dot-green':'dot-gray');
+  document.getElementById('gw-action-text').textContent = gwRunning ? '停止网关':'启动网关';
+  toast(gwRunning ? '网关已启动':'网关已停止', gwRunning?'success':'warn');
+  if(!gwRunning) document.getElementById('conn-dot').className = 'dot dot-gray';
+  else document.getElementById('conn-dot').className = 'dot dot-green';
+}
+document.getElementById('gw-switch').addEventListener('change', toggleGateway);
+
+/* ================= 路由表格 ================= */
+function toggleRowStatus(btn){
+  const tag = btn.closest('tr').querySelector('td:nth-child(6) .tag');
+  const enabled = tag.className.includes('green');
+  if(enabled){ tag.className = 'tag tag-gray'; tag.textContent = '禁用'; btn.textContent = '启用'; }
+  else { tag.className = 'tag tag-green'; tag.textContent = '启用'; btn.textContent = '禁用'; }
+  toast('已更新路由状态', 'info');
+}
+function removeRow(el, countId){
+  const cnt = document.getElementById(countId);
+  cnt.textContent = Math.max(0, parseInt(cnt.textContent)-1);
+  el.closest('tr').remove(); toast('已删除路由','info');
+}
+function filterTable(inp, tableId){
+  const q = inp.value.toLowerCase();
+  document.querySelectorAll('#'+tableId+' tbody tr').forEach(r=> {
+    r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none'; });
+}
+function addRoute(){
+  const p = document.getElementById('route-path').value.trim();
+  const u = document.getElementById('route-url').value.trim();
+  const m = document.getElementById('route-method').value;
+  const proto = document.getElementById('route-proto').value;
+  const model = document.getElementById('route-model').value.trim();
+  const force = document.getElementById('route-force').checked;
+  if(!p){ toast('请填写路径规则','warn'); return; }
+  // 自定义协议且未通过拉取验证 => 标记为适配失败，其余按成功处理
+  const failed = (proto==='自定义' && !force);
+  const protoCell = failed
+    ? '<span class="tag tag-red">'+proto+'</span><span class="text-[10px] ml-1" style="color:var(--danger)">✕ 响应结构转换失败</span>'
+    : '<span class="tag tag-green">'+proto+'</span><span class="text-[10px] ml-1" style="color:var(--ok)">✓ '+ (force?'已转 OpenAI 格式':'直接转发') +'</span>';
+  const tb = document.querySelector('#route-table tbody');
+  const tr = document.createElement('tr');
+  tr.dataset.path = p;
+  tr.dataset.method = m;
+  tr.dataset.status = failed ? '0' : '1';
+  tr.innerHTML = '<td class="mono font-semibold">'+p+'</td><td class="mono">'+u+(model?'<span class="text-[10px] block" style="color:var(--text-3)">model: '+model+'</span>':'')+'</td><td>'+protoCell+'</td><td><span class="tag tag-gray">'+m+'</span></td><td class="mono">5000ms</td><td><span class="tag '+ (failed?'tag-gray':'tag-green')+'">'+ (failed?'禁用':'启用') +'</span></td>'+
+    '<td><button class="btn btn-ghost btn-xs" onclick="toast(\'已编辑\',\'info\')">编辑</button><button class="btn btn-ghost btn-xs" onclick="toggleRowStatus(this)">'+(failed?'启用':'禁用')+'</button><button class="btn btn-danger btn-xs" onclick="removeRow(this,\'route-count\')">删除</button></td>';
+  tb.appendChild(tr);
+  document.getElementById('route-count').textContent = parseInt(document.getElementById('route-count').textContent)+1;
+  closeModal('modal-route'); toast('路由已添加：'+p, failed?'warn':'success');
+}
+/* 列排序 */
+document.querySelectorAll('table.grid th[data-sort]').forEach(th=> {
+  th.addEventListener('click', ()=>{
+    const tb = th.closest('table');
+    const tbody = tb.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    const key = th.dataset.sort;
+    const dir = th.classList.toggle('asc') ? 1 : -1;
+    rows.sort((a,b)=>{
+      const av=(a.dataset[key]||a.children[0].textContent).toLowerCase();
+      const bv=(b.dataset[key]||b.children[0].textContent).toLowerCase();
+      return av<bv?-dir:av>bv?dir:0;
+    });
+    rows.forEach(r=> tbody.appendChild(r));
+  });
+});
+
+/* ================= 聚合步骤展开 ================= */
+document.querySelectorAll('[data-steps-toggle]').forEach(btn=> btn.addEventListener('click', ()=>{
+  const steps = btn.closest('[data-agg]').querySelector('[data-steps]');
+  const open = steps.classList.toggle('hidden');
+  btn.textContent = btn.textContent.replace(open ? '▾':'▸', open ? '▸':'▾');
+}));
+function removeCard(el){ el.closest('[data-agg]').remove(); toast('已删除聚合','info'); }
+
+/* ================= 聚合编排步骤 ================= */
+const stepColors = ['var(--accent)','var(--ok)','var(--warn)'];
+function toggleExtract(sel){
+  sel.closest('[data-step]').querySelector('.extract-json').classList.toggle('hidden', sel.value !== '自定义 JSONPath');
+}
+function addStep(){
+  const list = document.getElementById('step-list');
+  const i = list.children.length + 1;
+  const div = document.createElement('div');
+  div.className = 'rounded-md border p-2';
+  div.setAttribute('data-step','');
+  div.style.borderColor = 'var(--divider)';
+  div.innerHTML =
+    '<div class="grid grid-cols-[auto_1fr_auto] gap-2 items-center">'+
+      '<span class="mono text-[11px]" style="color:var(--text-3)">'+i+'</span>'+
+      '<div class="grid grid-cols-[1fr_1fr] gap-2">'+
+        '<input class="inp mono" style="font-size:12px" placeholder="http://127.0.0.1:9000" value="http://127.0.0.1:900'+(i>3?7:i)+'"/>'+
+        '<select class="sel" style="font-size:12px;padding:6px"><option>GET</option><option>POST</option></select>'+
+      '</div>'+
+      '<button class="btn btn-danger btn-xs" onclick="this.closest(\'[data-step]\').remove()">×</button>'+
+    '</div>'+
+    '<div class="grid grid-cols-[1fr_2fr] gap-2 mt-2 items-center">'+
+      '<span class="text-[11px] font-semibold" style="color:var(--text-2)">输出提取模式</span>'+
+      '<select class="sel" style="font-size:12px;padding:6px" onchange="toggleExtract(this)">'+
+        '<option value="通用文本提取" selected>通用文本提取（自动适配平台响应）</option>'+
+        '<option value="自定义 JSONPath">自定义 JSONPath</option>'+
+      '</select>'+
+    '</div>'+
+    '<div class="extract-json hidden mt-2"><input class="inp mono" style="font-size:12px" placeholder="$.choices[0].message.content"/></div>';
+  list.appendChild(div);
+}
+
+/* ================= 协议适配 / 模型拉取 ================= */
+const PROTO_MODELS = {
+  'OpenAI 兼容': { pull:true,  models:['gpt-4o','gpt-4o-mini','gpt-4-turbo','gpt-3.5-turbo'],
+    ok:'从 /v1/models 拉取 4 个模型，已统一为 OpenAI 格式' },
+  'Anthropic':   { pull:false, models:['claude-3-5-sonnet-20241022','claude-3-5-haiku-20241022','claude-3-opus-20240229'],
+    ok:'该平台不支持自动拉取，已加载内置模型列表' },
+  'Google Gemini':{ pull:true, models:['gemini-1.5-pro','gemini-1.5-flash','gemini-2.0-flash'],
+    ok:'从 /v1beta/models 拉取 3 个模型，并转换为 OpenAI 格式' },
+  '自定义':       { pull:false, models:['自行填入 /v1/models','（自定义端点手动指定）'],
+    fail:true, ok:'响应结构不匹配，适配失败，已加载内置模型列表' }
+};
+function testAndPullModels(){
+  const proto = document.getElementById('route-proto').value;
+  const cfg = PROTO_MODELS[proto];
+  const box = document.getElementById('pull-result');
+  const dl = document.getElementById('model-suggest');
+  const input = document.getElementById('route-model');
+  if(cfg.pull){
+    // 模拟异步拉取
+    box.classList.remove('hidden');
+    box.innerHTML = '<div class="text-[12px]" style="color:var(--text-2)">正在从 '+(proto==='Google Gemini'?'/v1beta/models':'/v1/models')+' 拉取…</div>';
+    setTimeout(()=>{
+      fillModelResult(box, dl, input, cfg, true);
+    }, 900);
+  } else if(cfg.fail){
+    fillModelResult(box, dl, input, cfg, false);
+  } else {
+    fillModelResult(box, dl, input, cfg, false);
+  }
+}
+function fillModelResult(box, dl, input, cfg, success){
+  dl.innerHTML = cfg.models.map(m=>'<option value="'+m+'"></option>').join('');
+  if(cfg.models.length && !input.value) input.value = cfg.models[0];
+  const listHtml = cfg.models.length
+    ? '<div class="mt-1 flex flex-wrap gap-1">'+cfg.models.slice(0,6).map(m=>'<span class="tag tag-gray mono" onclick="document.getElementById(\'route-model\').value=\''+m+'\';toast(\'已选择模型 '+m+'\')">'+m+'</span>').join('')+'</div>'
+    : '';
+  const tone = success ? 'var(--ok)' : 'var(--warn)';
+  const dotCls = success ? 'dot dot-green' : 'dot';
+  box.classList.remove('hidden');
+  box.innerHTML =
+    '<div class="rounded-lg p-3 border" style="border-color:var(--divider);background:'+(success?'var(--ok-soft)':'var(--warn-soft)')+'">'+
+      '<div class="flex items-center gap-2 text-[12px]" style="color:'+tone+'"><span class="'+dotCls+'" style="'+(!success?'background:var(--warn)':'')+'"></span><b>'+(success?'适配成功':'协议适配失败')+'</b>'+(success?' · 已统一为 OpenAI 格式 请求/响应':'')+'</div>'+
+      '<div class="text-[12px] mt-1" style="color:var(--text-2)">'+cfg.ok+'</div>'+listHtml+
+    '</div>';
+  toast(success ? '拉取模型成功（'+cfg.models.length+' 个）' : (cfg.fail?'协议适配失败：响应结构不匹配':'该平台不支持自动拉取，已加载内置模型列表'), success?'success':'warn');
+}
+document.querySelectorAll('#platform-chips .chip').forEach(c=> c.addEventListener('click', ()=>{
+  document.querySelectorAll('#platform-chips .chip').forEach(x=> x.classList.remove('active'));
+  c.classList.add('active');
+  document.getElementById('route-proto').value = c.dataset.proto;
+  const cfg = PROTO_MODELS[c.dataset.proto];
+  if(cfg.models.length){ const inp=document.getElementById('route-model'); inp.value = cfg.models[0]; inp.setAttribute('placeholder', cfg.models[0]); }
+  document.getElementById('pull-result').classList.add('hidden');
+  toast('已切换到平台：'+c.dataset.proto, 'info');
+}));
+
+/* ================= 聚合跨平台测试 ================= */
+const AGG_PLATFORMS = ['OpenAI 兼容','Anthropic','Google Gemini','自定义'];
+function testAggregate(){
+  const steps = document.querySelectorAll('#step-list [data-step]');
+  const box = document.getElementById('agg-test-result');
+  if(!steps.length){ toast('请先添加步骤','warn'); return; }
+  box.classList.remove('hidden');
+  box.innerHTML = '<div class="text-[12px] mb-2 font-semibold" style="color:var(--text-2)">正在跨平台编排测试…</div>';
+  setTimeout(()=>{
+    const delays = [22,148,9,61];
+    const lines = Array.from(steps).map((s,i)=>{
+      const url = s.querySelector('input.inp').value || '<未填>';
+      const pf = AGG_PLATFORMS[i % AGG_PLATFORMS.length];
+      const ok = i !== 3;
+      const d = delays[i % delays.length];
+      const extractMode = s.querySelector('.extract-json').classList.contains('hidden') ? '通用' : 'JSONPath';
+      return '<div class="flex items-center justify-between text-[12px] py-1.5 border-b last:border-0" style="border-color:var(--divider)">'+
+        '<span class="mono">'+(i+1)+'. '+url+' <span class="tag tag-gray" style="font-size:10px">'+extractMode+'</span></span>'+
+        '<span class="flex items-center gap-2"><span class="tag tag-gray">'+pf+'</span>'+
+        '<span class="mono" style="color:'+(ok?'var(--ok)':'var(--warn)')+'">'+(ok?'200 · '+d+'ms':'⚠ 转换降级 · '+d+'ms')+'</span></span></div>';
+    }).join('');
+    box.innerHTML =
+      '<div class="text-[12px] mb-2 font-semibold" style="color:var(--ok)">✓ 测试完成：3/4 成功 · 总耗时 42ms</div>'+lines;
+    toast('聚合测试完成','success');
+  }, 1200);
+}
+
+/* ================= 多 API Key 增删 ================= */
+function addApiKeyRow(){
+  const tb = document.getElementById('apikey-rows');
+  const tr = document.createElement('tr');
+  tr.innerHTML = '<td><span class="tag tag-gray"></span></td>'+
+    '<td><input class="inp mono" style="font-size:12px" placeholder="sk-..."/></td>'+
+    '<td><input class="inp mono" style="width:70px;font-size:12px" value="10"/></td>'+
+    '<td><button class="btn btn-danger btn-xs" onclick="removeApiKeyRow(this)">删除</button></td>';
+  tb.appendChild(tr);
+  renumberKeys();
+  toast('已添加 API Key 行','info');
+}
+function removeApiKeyRow(btn){
+  btn.closest('tr').remove();
+  renumberKeys();
+  toast('已移除 API Key','info');
+}
+function renumberKeys(){
+  Array.from(document.querySelectorAll('#apikey-rows tr')).forEach((r,k)=> r.querySelector('.tag').textContent = k+1);
+}
+
+/* ================= 测试接口弹窗 ================= */
+function openTestModal(){
+  const proto = document.getElementById('route-proto') ? document.getElementById('route-proto').value : 'OpenAI 兼容';
+  const model = document.getElementById('route-model') ? document.getElementById('route-model').value.trim() : '';
+  document.getElementById('test-proto').textContent = proto + (model ? ' · ' + model : '');
+  openModal('modal-test');
+  toast('已发起测试请求','info');
+}
+
+/* ================= 日志 ================= */
+let logPaused = false;
+function toggleLogPause(){
+  logPaused = !logPaused;
+  const b = document.getElementById('btn-log-pause');
+  b.firstChild.textContent = logPaused ? '继续' : '暂停';
+  document.getElementById('log-live').className = 'dot ' + (logPaused ? 'dot-gray':'dot-green');
+  toast(logPaused ? '日志滚动已暂停':'日志滚动已继续','info');
+}
+function filterLogs(q){
+  q = q.toLowerCase();
+  document.querySelectorAll('#log-body tr').forEach(r=>{
+    r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+document.querySelectorAll('[data-lvl]').forEach(chip=>{
+  chip.addEventListener('click', ()=>{
+    const active = chip.classList.toggle('active');
+    const on = [];
+    document.querySelectorAll('[data-lvl].active').forEach(c=> on.push(c.dataset.lvl));
+    document.querySelectorAll('#log-body tr').forEach(r=>{
+      r.style.display = (on.length===0 || on.includes(r.dataset.lvl)) ? '' : 'none';
+    });
+  });
+});
+
+/* ================= 二维码（伪随机 QR 网格）================ */
+function drawQr(seed){
+  let s = 1234 + seed;
+  const rnd = ()=>{ s = (s*1103515245+12345) & 0x7fffffff; return s/0x7fffffff; };
+  const N=25; let cells='';
+  const pos = [[0,0],[0,2],[2,0],[0,15],[0,17],[2,15],[15,0],[17,0],[15,2]];
+  // 定位块
+  for(let r=0; r<N; r++) for(let c=0; c<N; c++) cells += '<rect x="'+c+'.2" y="'+r+'.2" width=".7" height=".7" fill="var(--text-3)"/>';
+  for(const [r,c] of pos) for(let dr=-1;dr<=9;dr++) for(let dc=-1;dc<=9;dc++){
+    const R=r+dr,C=c+dc; if(R<0||C<0||R>=N||C>=N) continue;
+    const inner = dr>=0&&dr<=6&&dc>=0&&dc<=6 ? (dr>=1&&dr<=5&&dc>=1&&dc<=5 ? 1 : 2) : (dr>=2&&dr<=4&&dc>=2&&dc<=4 ? 1:0);
+    if(inner) cells += '<rect x="'+(C+.2)+'" y="'+(R+.2)+'" width=".7" height=".7" fill="'+(inner===1?'var(--text)':'var(--text-3)')+'"/>';
+  }
+  for(let r=0;r<N;r++) for(let c=0;c<N;c++){
+    const inFinder = pos.some(([R,C])=> r>=R-1&&r<=R+7&&c>=C-1&&c<=C+7);
+    if(!inFinder && rnd()<0.38) cells += '<rect x="'+(c+.2)+'" y="'+(r+.2)+'" width=".7" height=".7" fill="var(--text-3)"/>';
+  }
+  document.getElementById('qr-svg').innerHTML = cells;
+}
+function openQr(){ drawQr(Date.now()%1000); openModal('modal-qr'); }
+
+/* 初始：聚合编排示例步骤 */
+addStep(); addStep();
+
+/* ================= 刷新按钮演示 ================= */
+document.getElementById('btn-refresh').addEventListener('click', ()=>{ toast('正在刷新网关数据…','info'); setTimeout(()=>toast('数据已刷新','success'), 900); });
+</script>
+</body>
+</html>
