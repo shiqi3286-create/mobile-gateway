@@ -537,21 +537,56 @@ https://github.com/shiqi3286-create/mobile-gateway/actions
 进入 Actions → 点击成功的 Build Gateway 运行记录 → 页面底部 Artifacts → 下载 mobile-gateway-binaries。
 
 
-七、Git 提交状态
-----------------
+七、Git 提交与云端编译状态
+--------------------------
 
-已完成：
-- GitHub 仓库已创建
-- 仓库地址已配置
-- E:\API聚合 已初始化 git
-- 已提交 22 个文件
-- 已推送到 main 分支
-
-首个提交：
-96a090c Initial gateway backend and GitHub Actions build
+仓库地址：
+https://github.com/shiqi3286-create/mobile-gateway
 
 已配置远程地址：
 https://github.com/shiqi3286-create/mobile-gateway.git
+
+提交历史：
+1. 96a090c  Initial gateway backend and GitHub Actions build
+2. d0423cb  Fix cloud build type mismatches
+3. 25f1cde  Fix float/int mismatch and unify module wiring to prevent type mismatches
+
+当前云端编译结果：
+- 工作流：Build Gateway (Windows exe)
+- 运行编号：#3（对应提交 25f1cde）
+- 结论：SUCCESS ✅
+- Vet & Build：成功
+- Cross-compile binaries：成功
+- Upload artifacts：成功
+
+云端编译产物（Artifacts）：
+- 名称：mobile-gateway-binaries
+- 大小：约 8.3 MB
+- 状态：未过期，可下载
+
+产物内容：
+- mobile-gateway.exe                (Windows amd64，PC 联调用)
+- mobile-gateway-linux-amd64        (Linux amd64)
+- mobile-gateway-android-arm64      (Android arm64)
+
+下载方式：
+进入仓库 Actions 页面 → 打开成功运行记录 → 页面底部 Artifacts → 下载 mobile-gateway-binaries → 解压。
+
+编译过程中修复的问题（重要记录）：
+1. stats.go：TopAPI.AvgMs 为 float64，avgMsLocked 返回 int64，已加 float64 转换。
+2. httpapi/logs.go：日志查询级别参数类型不一致，接口统一为 []string。
+3. seed.go：float64 与 int 直接相乘，改为 density * float64(30+rng.Intn(40))。
+4. 架构清理：移除 httpapi 的 StatsProvider / ConfigProvider / LogsProvider 接口与 main.go 的适配器层，
+   改为 Handler 直接持有 *stats.Collector / *config.Manager / *logs.Store。
+   原因：接口方法签名与实际实现不一致（如 Snapshot 返回 *stats.Stats 无法满足 interface{}），
+   这类不一致编译器无法在早期暴露，且适配器里的类型断言会在运行时 panic。移除后由编译器直接校验。
+
+本地静态校验脚本（不编译，Node 运行）：
+- scripts/verify_go.js        模块名 / 导入路径 / 括号平衡
+- scripts/verify_calls.js     httpapi 对 config/logs/stats 的方法调用是否存在
+- scripts/verify_imports.js   是否存在导入但未使用的包
+- scripts/verify_struct.js    前端字段与后端 JSON 标签一致性
+
 
 
 八、前端与后端对接计划
@@ -608,14 +643,22 @@ https://github.com/shiqi3286-create/mobile-gateway.git
 九、下一步建议
 --------------
 
-推荐优先顺序：
+已完成：
+1. GitHub Actions 云端编译通过。
+2. 已产出 Windows / Linux / Android 三个平台二进制。
 
-1. 先等待 GitHub Actions 编译完成。
-2. 若编译失败，根据 Actions 日志修正 Go 代码。
-3. 编译成功后，继续把 PC 端仪表盘 HTML 接入真实 GET /api/stats。
-4. 增加静态文件托管，让 /admin 实际显示管理页面。
-5. 再实现路由管理 CRUD 与真实持久化。
-6. 最后实现 ReverseProxy、协议转换、聚合编排和 Android 前台服务。
+接下来推荐顺序：
+
+1. 下载 mobile-gateway-binaries，解压得到 mobile-gateway.exe。
+2. 在 PC 上运行 exe（默认 -demo 开启），验证 GET /api/stats 返回的 JSON 结构。
+3. 把 PC 端仪表盘 HTML 接入真实 GET /api/stats（替换硬编码数字）。
+4. 增加静态文件托管，让 /admin 实际显示管理页面（main.go 传入 -web 目录）。
+5. 实现路由管理 CRUD 的真实持久化联调。
+6. 实现 ReverseProxy 路由转发与超时重试。
+7. 实现 OpenAI / Anthropic / Gemini 协议转换与流式输出。
+8. 实现聚合编排（并行/串行、字段映射、SSE 打字机效果）。
+9. Android 端接入（Compose + ViewModel + Retrofit + 前台服务）。
+
 
 
 十、重要注意事项
