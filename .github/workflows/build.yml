@@ -1,68 +1,42 @@
 name: 聚合网关-安卓0.0
 
-# 触发条件：
-#   1. push 到 main / master 分支
-#   2. 手动触发（GitHub 仓库 Actions 页面 → "Run workflow" 按钮）
-#   3. 打 tag 时（v*）自动构建发布版
 on:
   push:
     branches: [main, master]
     tags: ['v*']
-  workflow_dispatch:   # 手动触发
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-latest   # 云端 Linux 环境（编译产物是 Windows exe，见 GOOS/GOARCH 设置）
-
-    # 说明：Go 模块放在仓库子目录 网关后端/ 下，
-    # 所有 run 步骤都进入该目录执行，使 go build ./... 能找到 go.mod。
+    name: Build gateway binaries
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: 网关后端
-
     steps:
-      # 1) 拉取代码
       - name: Checkout
         uses: actions/checkout@v4
-
-      # 2) 设置 Go 版本（与 go.mod 声明的 go 1.21 兼容）
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'          # 稳定版，>= go.mod 要求即可
-          cache: true                 # 缓存 Go module 下载，加速后续构建
-
-      # 3) 编译前环境确认（打印版本，便于排查）
-      - name: Show versions
-        run: |
-          go version
-          go env GOOS GOARCH CGO_ENABLED
-
-      # 4) 执行编译（go vet 静态检查 + go build ./...）
-      #    若代码有编译错误，这里会失败并在 Actions 页面显示红色 ❌
-      - name: Vet & Build
+          go-version: '1.24'
+          cache: false
+      - name: Vet and build
         run: |
           go vet ./...
           go build ./...
-
-      # 5) 生成三个平台的部署文件：Android 手机、Windows 联调、Linux 部署
-      - name: Cross-compile binaries
+      - name: Cross-compile gateway binaries
         run: |
           mkdir -p dist
           CGO_ENABLED=0 GOOS=android GOARCH=arm64 go build -trimpath -ldflags "-s -w" -o dist/聚合网关-安卓0.0-arm64 .
           CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o dist/聚合网关-安卓0.0-win.exe .
           CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o dist/聚合网关-安卓0.0-linux-amd64 .
-
-      # 6) 上传编译产物（Actions 页面 → 本次运行的 Artifacts 区域下载）
-      #    注意：path 相对仓库根目录，所以带 网关后端/ 前缀
-      - name: Upload artifacts
+      - name: Upload gateway binaries
         uses: actions/upload-artifact@v4
         with:
           name: 聚合网关-安卓0.0
           path: 网关后端/dist/
-
-      # 7) 若是打了 tag（v*），额外发布 Android arm64 版本
-      - name: Release (tagged only)
+      - name: Release tagged binaries
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
@@ -71,3 +45,50 @@ jobs:
             网关后端/dist/聚合网关-安卓0.0-win.exe
             网关后端/dist/聚合网关-安卓0.0-linux-amd64
           generate_release_notes: true
+
+  build-android-apk:
+    name: Build Android APK
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Install Android SDK packages
+        run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+      - name: Download gateway binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: 聚合网关-安卓0.0
+          path: downloaded-gateway
+      - name: Stage Android assets
+        shell: bash
+        run: |
+          mkdir -p android-app/app/src/main/assets
+          cp "手机界面设计/gateway-prototype.html" android-app/app/src/main/assets/gateway-prototype.html
+          cp "downloaded-gateway/聚合网关-安卓0.0-arm64" android-app/app/src/main/assets/聚合网关-安卓0.0-arm64
+          chmod 700 android-app/app/src/main/assets/聚合网关-安卓0.0-arm64
+      - name: Install Gradle and generate wrapper
+        shell: bash
+        run: |
+          curl -fsSL https://services.gradle.org/distributions/gradle-8.10.2-bin.zip -o /tmp/gradle.zip
+          unzip -q /tmp/gradle.zip -d /tmp
+          /tmp/gradle-8.10.2/bin/gradle -p android-app wrapper --gradle-version 8.10.2 --distribution-type bin
+          chmod +x android-app/gradlew
+      - name: Build debug APK
+        working-directory: android-app
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+      - name: Rename APK
+        shell: bash
+        run: cp android-app/app/build/outputs/apk/debug/app-debug.apk android-app/app/build/outputs/apk/debug/聚合网关-安卓0.0.apk
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: 聚合网关-安卓0.0-apk
+          path: android-app/app/build/outputs/apk/debug/聚合网关-安卓0.0.apk

@@ -28,6 +28,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"path/filepath"
 	"strings"
 
 	"mobile-gateway/internal/config"
@@ -130,17 +131,19 @@ func (h *Handler) Register(mux *http.ServeMux, adminAPI, webRoot string) {
 	mux.HandleFunc(adminAPI+"/test/aggregate", h.handleTestAggregate)
 	mux.HandleFunc(adminAPI+"/providers/", h.handleProviderModels)
 
-	// 静态页面（管理界面 HTML）
-	if webRoot != "" {
-		fs := http.FileServer(http.Dir(webRoot))
-		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/" {
-				http.ServeFile(w, r, webRoot+"/index.html")
-				return
+		// 静态页面（管理界面 HTML）。/admin 是 PC 浏览器和 Android WebView 的统一入口。
+		if webRoot != "" {
+			fs := http.FileServer(http.Dir(webRoot))
+			serveIndex := func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path == "/" || r.URL.Path == "/admin" || r.URL.Path == "/admin/" {
+					http.ServeFile(w, r, filepath.Join(webRoot, "index.html"))
+					return
+				}
+				fs.ServeHTTP(w, r)
 			}
-			fs.ServeHTTP(w, r)
-		})
-	}
+			mux.HandleFunc("/admin", serveIndex)
+			mux.HandleFunc("/", serveIndex)
+		}
 }
 
 // ---------- 各处理器实现（具体逻辑分文件） ----------

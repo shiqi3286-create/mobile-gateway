@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">聚合网关-安卓0.0</string>
+    <string name="gateway_channel_name">聚合网关运行状态</string>
+    <string name="gateway_channel_description">保持本地聚合网关在后台运行</string>
+</resources>

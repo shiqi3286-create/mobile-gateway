@@ -19,3 +19,9 @@ Thumbs.db
 网关后端/scripts/*_dbg.js
 mobile-gateway-binaries/
 *.zip
+android-app/app/src/main/assets/聚合网关-安卓0.0-arm64
+android-app/app/src/main/assets/gateway-prototype.html
+android-app/.gradle/
+android-app/app/build/
+android-app/gradle/wrapper/gradle-wrapper.jar
+聚合网关-安卓0.0/

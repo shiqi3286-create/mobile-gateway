@@ -1,0 +1,9 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.AggregationGateway" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">@color/gateway_primary</item>
+        <item name="android:navigationBarColor">@color/gateway_background</item>
+        <item name="android:statusBarColor">@color/gateway_background</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+</resources>
