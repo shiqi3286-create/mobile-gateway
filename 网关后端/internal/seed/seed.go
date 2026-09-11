@@ -73,7 +73,7 @@ func replayStats(c *stats.Collector) {
 			if base.Weekday() == time.Saturday || base.Weekday() == time.Sunday {
 				density *= 0.6
 			}
-			count := int(density * (30 + rng.Intn(40)))
+			count := int(density * float64(30+rng.Intn(40)))
 			for i := 0; i < count; i++ {
 				path := paths[rng.Intn(len(paths))]
 				prov := providers[rng.Intn(len(providers))]

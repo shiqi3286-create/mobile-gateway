@@ -31,6 +31,8 @@ import (
 	"strings"
 
 	"mobile-gateway/internal/config"
+	"mobile-gateway/internal/logs"
+	"mobile-gateway/internal/stats"
 )
 
 // ---------- 统一响应 ----------
@@ -84,43 +86,17 @@ func parseID(path, prefix string) (id string, rest string) {
 // ---------- 处理器注册 ----------
 
 // Handler 管理 API 处理器集合。
+//
+// 说明：这里直接持有各模块的具体类型（而非接口），
+// 因为接口方法签名与实际实现极易出现细微不一致
+// （例如 Snapshot 返回 *stats.Stats 与 interface{} 不等价），
+// 直接引用可让编译器在编译期完成校验，也避免运行期类型断言 panic。
 type Handler struct {
-	Stats  StatsProvider   // 统计快照（stats.Collector）
-	Config ConfigProvider  // 配置（config.Manager）
-	Logs   LogsProvider    // 日志（logs.Store）
-	Proxy  ProxyProvider   // 路由转发（proxy.Engine，用于测试）
-	Agg    AggProvider     // 聚合编排（aggregate.Engine）
-}
-
-// StatsProvider 统计快照接口
-type StatsProvider interface {
-	Snapshot(rangeStr string) interface{}
-}
-
-// ConfigProvider 配置管理接口
-type ConfigProvider interface {
-	Get() interface{}
-	Update(cfg interface{}) error
-	ImportJSON(data []byte) error
-	ExportJSON() ([]byte, error)
-	Reset() error
-	ListRoutes() interface{}
-	AddRoute(r *config.Route) (interface{}, error)
-	UpdateRoute(id string, r *config.Route) (interface{}, error)
-	DeleteRoute(id string) error
-	SetRouteEnabled(id string, enabled bool) error
-	ListAggregates() interface{}
-	AddAggregate(a *config.Aggregate) (interface{}, error)
-	UpdateAggregate(id string, a *config.Aggregate) (interface{}, error)
-	DeleteAggregate(id string) error
-	SetAggregateEnabled(id string, enabled bool) error
-}
-
-// LogsProvider 日志接口
-type LogsProvider interface {
-	Query(levels []string, channel, keyword string, page, size int) interface{}
-	Clear() error
-	ExportText() []byte
+	Stats  *stats.Collector // 统计快照
+	Config *config.Manager  // 配置 / 路由 / 聚合
+	Logs   *logs.Store      // 日志
+	Proxy  ProxyProvider    // 路由转发（proxy.Engine，用于测试；第二阶段接入）
+	Agg    AggProvider      // 聚合编排（aggregate.Engine；第二阶段接入）
 }
 
 // ProxyProvider 路由转发接口（供测试弹窗调用）
@@ -193,12 +169,12 @@ func (h *Handler) handleConfig(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		ok(w, h.Config.Get())
 	case http.MethodPut:
-		var cfg interface{}
+		var cfg config.Config
 		if err := readJSON(r, &cfg); err != nil {
 			fail(w, http.StatusBadRequest, 400, "请求体解析失败: "+err.Error())
 			return
 		}
-		if err := h.Config.Update(cfg); err != nil {
+		if err := h.Config.Update(&cfg); err != nil {
 			fail(w, http.StatusBadRequest, 400, err.Error())
 			return
 		}

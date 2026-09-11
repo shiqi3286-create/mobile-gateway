@@ -104,9 +104,9 @@ func (h *Handler) handleRouteByID(w http.ResponseWriter, r *http.Request) {
 
 // routeFromMap 将前端提交的 JSON 对象（map[string]interface{}）转换为 config.Route 结构体。
 // 通过两级 JSON 序列化实现字段名对齐，避免手写映射遗漏。
-func routeFromMap(m map[string]interface{}) *config.Route {
+func routeFromMap(m map[string]interface{}) config.Route {
 	data, _ := json.Marshal(m)
 	var r config.Route
 	_ = json.Unmarshal(data, &r)
-	return &r
+	return r
 }

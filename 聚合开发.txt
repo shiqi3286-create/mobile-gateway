@@ -1,0 +1,630 @@
+个人移动聚合网关项目开发进度
+==============================
+
+一、项目概述
+------------
+项目名称：Android 个人移动聚合网关
+当前仓库：https://github.com/shiqi3286-create/mobile-gateway
+本地目录：E:\API聚合
+
+项目目标：
+在 Android 手机上运行一个个人移动聚合网关，将多个本地端口、第三方 API 和 AI 模型服务聚合到统一端口和统一管理 API。
+
+当前网络模式：
+- 电脑连接 Wi-Fi 并开启移动热点
+- Android 手机连接电脑热点
+- 手机网关监听 0.0.0.0:8080
+- 电脑浏览器通过 http://手机IP:8080/admin 访问管理界面
+- 手机不消耗移动数据，纯局域网运行
+
+
+二、已读取的 UI 设计文件
+------------------------
+
+1. PC 端管理界面
+文件：E:\API聚合\win界面设计\mobile-gateway-admin.html
+
+包含页面：
+- 仪表盘
+- 路由管理
+- API 聚合
+- 日志
+- 统计
+- 设置
+- 关于
+
+2. 手机端界面
+文件：E:\API聚合\手机界面设计\gateway-prototype.html
+
+包含页面：
+- 首页
+- 路由
+- 聚合
+- 日志
+- 设置
+- 网关状态抽屉
+- 聚合测试页面
+- SSE/打字机效果演示
+- API Key 管理
+
+说明：
+两个 HTML 文件目前都是静态 UI 原型，没有真实 fetch() 调用，页面中的数据和按钮行为主要通过硬编码及 toast 演示。因此后端接口是根据 UI 字段、按钮和交互逻辑提取并定义的。
+
+
+三、当前接口清单
+----------------
+
+统一返回格式：
+{
+  "code": 0,
+  "message": "ok",
+  "data": { }
+}
+
+code=0 表示成功，非 0 表示业务错误。
+管理接口统一使用 /api 前缀。
+
+1. 仪表盘与统计
+
+GET /api/stats?range=1h|24h|7d
+用途：仪表盘和统计页面数据。
+
+返回结构核心字段：
+{
+  "code": 0,
+  "message": "ok",
+  "data": {
+    "gateway": {
+      "running": true,
+      "pid": 1024,
+      "uptime": "06:23:41",
+      "uptime_sec": 23021
+    },
+    "mode": "hotspot",
+    "phone_ip": "192.168.137.23",
+    "listen_port": 8080,
+    "hotspot_ip": "192.168.137.1",
+    "devices": 3,
+    "cellular_off": true,
+    "wifi_signal": -48,
+    "wifi_signal_text": "强",
+    "token": {
+      "today": {
+        "total": 2847392,
+        "input": 1902418,
+        "output": 944974,
+        "yesterday_delta_pct": 8.2,
+        "cost": 12.48,
+        "month_total": 86.1,
+        "month_budget": 200,
+        "budget_used_pct": 43
+      },
+      "by_provider": [
+        {"provider": "OpenAI", "pct": 62},
+        {"provider": "Anthropic", "pct": 28},
+        {"provider": "Gemini", "pct": 10}
+      ],
+      "by_provider_cost": [
+        {"provider": "OpenAI", "cost": 8.21},
+        {"provider": "Anthropic", "cost": 3.52},
+        {"provider": "Gemini", "cost": 0.75}
+      ]
+    },
+    "real_time": {
+      "requests": 1234,
+      "success_rate": 99.2,
+      "avg_latency_ms": 38,
+      "traffic_mb": 142
+    },
+    "trend": {
+      "range": "24h",
+      "points": [
+        {"ts": "10:00", "count": 40}
+      ]
+    },
+    "recent_logs": [],
+    "agg_stats": [],
+    "error_dist": {
+      "ok": 99.2,
+      "warn": 0.5,
+      "error": 0.3
+    },
+    "traffic": {
+      "up_mb": 48.2,
+      "down_mb": 93.8,
+      "up_delta_pct": 4.1,
+      "down_delta_pct": 8.7
+    },
+    "agg_latency": [],
+    "top_apis": []
+  }
+}
+
+2. 路由管理
+
+GET /api/routes
+用途：获取路由列表。
+可选参数：
+- q：搜索路径或目标地址
+- status：enabled/disabled
+- page：页码
+- page_size：每页数量
+
+POST /api/routes
+用途：创建路由。
+
+PUT /api/routes/{id}
+用途：修改路由。
+
+DELETE /api/routes/{id}
+用途：删除路由。
+
+PATCH /api/routes/{id}/enabled
+请求：
+{"enabled": true}
+用途：启用或禁用路由。
+
+POST /api/routes/batch
+用途：手机端多选后批量启用、禁用或删除。
+
+POST /api/routes/{id}/test
+用途：测试路由，返回请求、响应、耗时、Token 和协议转换结果。
+
+POST /api/routes/{id}/pull-models
+用途：测试连接并拉取上游模型列表。
+
+路由对象：
+{
+  "id": "r_xxx",
+  "path": "/user/*",
+  "target": "http://127.0.0.1:9001",
+  "proto": "openai",
+  "proto_name": "OpenAI 兼容",
+  "model": "gpt-4o-mini",
+  "force": true,
+  "method": "ALL",
+  "timeout": 5000,
+  "retry": 1,
+  "qps": 50,
+  "enabled": true,
+  "adapt_ok": true,
+  "keys": [
+    {"key": "sk-...", "weight": 60, "name": "主力 Key"}
+  ],
+  "prompt": "系统提示词",
+  "prompt_on": true,
+  "cache": true,
+  "cache_ttl": 300,
+  "created_at": 0,
+  "updated_at": 0
+}
+
+前端字段映射：
+- route-path → path
+- route-url → target
+- route-proto → proto
+- route-model → model
+- route-force → force
+- route-method → method
+- route-timeout → timeout
+- route-retry → retry
+- route-qps → qps
+- apikey-rows → keys
+- route-prompt-sw → prompt_on
+- route-prompt → prompt
+- route-cache → cache
+- route-cache-ttl → cache_ttl
+
+手机端字段映射：
+- rfPath → path
+- rfTarget → target
+- rfProto → proto
+- rfForce → force
+- rfModel → model
+- rfKeysBtn → keys
+- 高级设置中的系统提示词 → prompt
+- 上下文缓存开关 → cache
+
+3. API 聚合
+
+GET /api/aggregates
+用途：获取聚合接口列表。
+
+POST /api/aggregates
+用途：创建聚合接口。
+
+GET /api/aggregates/{id}
+用途：获取聚合详情。
+
+PUT /api/aggregates/{id}
+用途：修改聚合接口。
+
+DELETE /api/aggregates/{id}
+用途：删除聚合接口。
+
+PATCH /api/aggregates/{id}/enabled
+请求：
+{"enabled": true}
+用途：启动或暂停聚合。
+
+POST /api/aggregates/{id}/test
+用途：执行非流式聚合测试。
+
+GET/POST /api/aggregates/{id}/stream
+用途：SSE 流式聚合测试。
+
+聚合对象：
+{
+  "id": "a_xxx",
+  "name": "用户订单聚合",
+  "path": "/api/user/order",
+  "method": "GET",
+  "mode": "parallel",
+  "enabled": true,
+  "stream": true,
+  "steps": [
+    {
+      "name": "调用用户服务",
+      "method": "GET",
+      "url": "http://127.0.0.1:9001/users/:id",
+      "extract": "auto",
+      "jsonpath": ""
+    }
+  ],
+  "mapping": "user: {$.steps[0].data}"
+}
+
+聚合步骤执行方式：
+- parallel：并行
+- serial：串行
+
+步骤输出提取模式：
+- auto：通用文本提取，自动适配平台响应
+- jsonpath：使用自定义 JSONPath
+
+4. 日志
+
+GET /api/logs
+参数：
+- level：INFO、WARN、ERROR，可逗号分隔
+- channel：http、agg、net、hotspot、ble、lan、bt
+- keyword：路径、方法或消息关键词
+- page：页码
+- size：每页数量
+
+DELETE /api/logs
+用途：清空日志。
+
+GET /api/logs/export
+用途：导出 log.txt。
+
+GET /api/logs/stream
+用途：SSE 实时日志流。
+
+日志对象：
+{
+  "id": 1,
+  "time": "2026-09-11T10:00:00+08:00",
+  "time_str": "10:00:00",
+  "level": "INFO",
+  "channel": "http",
+  "method": "GET",
+  "path": "/api/user/order",
+  "status": 200,
+  "ms": 45,
+  "message": "聚合完成",
+  "req": "GET /api/user/order",
+  "resp": "200 OK"
+}
+
+5. 设置与网关控制
+
+GET /api/config
+用途：读取全部配置。
+
+PUT /api/config
+用途：保存配置。
+
+POST /api/config
+用途：导入配置 JSON。
+
+POST /api/config/reset
+用途：恢复默认配置。
+
+GET /api/config/export
+用途：导出 gateway.config.json。
+
+GET /api/status
+用途：读取网关运行状态、IP、端口、运行时长和版本。
+
+POST /api/gateway/start
+用途：启动网关。
+
+POST /api/gateway/stop
+用途：停止网关。
+
+POST /api/gateway/restart
+用途：重启网关。
+
+设置字段：
+{
+  "listen_port": 8080,
+  "enable_https": false,
+  "enable_mdns": true,
+  "api_key": "gw_live_xxx",
+  "ip_whitelist": ["192.168.137.0/24"],
+  "enable_ble": false,
+  "ble_service": "0000ffe0-0000-1000-8000-00805f9b34fb",
+  "ble_encrypt": "Just Works",
+  "auto_detect_hotspot": true,
+  "prefer_hotspot": true,
+  "close_cellular_reminder": true,
+  "foreground_service": true,
+  "battery_whitelist": true,
+  "boot_auto_start": false,
+  "month_budget": 200
+}
+
+6. 模型列表
+
+GET /api/providers/{proto}/models
+参数：
+- target：上游地址
+- api_key：联调阶段可传，正式版建议使用安全 Header 或路由 Key
+
+支持协议：
+- openai：请求 /v1/models
+- gemini：请求 /v1/models 或后续适配 /v1beta/models
+- anthropic：返回内置模型列表
+- custom：尝试请求自定义平台模型接口
+
+7. 测试接口
+
+POST /api/test/route
+用途：PC 端测试接口弹窗。
+
+POST /api/test/aggregate
+用途：非流式聚合测试。
+
+POST /api/test/aggregate?stream=1
+用途：SSE 流式聚合测试。
+
+SSE 事件格式：
+- event: step
+  data: {"index": 0, "state": "done", "ms": 118}
+
+- event: token
+  data: {"in": 1024, "out": 356, "cost": 0.0084}
+
+- event: text
+  data: {"chunk": "聚合输出文本"}
+
+- event: done
+  data: {"ok": true, "total_ms": 460}
+
+
+四、当前后端目录结构
+--------------------
+
+E:\API聚合\网关后端\
+├─ go.mod
+├─ main.go
+├─ internal\
+│  ├─ config\
+│  │  └─ config.go
+│  ├─ httpapi\
+│  │  ├─ httpapi.go
+│  │  ├─ routes.go
+│  │  ├─ aggregates.go
+│  │  ├─ logs.go
+│  │  ├─ models.go
+│  │  └─ test.go
+│  ├─ logs\
+│  │  └─ logs.go
+│  ├─ protocol\
+│  │  └─ protocol.go
+│  ├─ seed\
+│  │  └─ seed.go
+│  └─ stats\
+│     └─ stats.go
+└─ scripts\
+   ├─ fix_imports.js
+   ├─ paren_scan.js
+   ├─ verify_go.js
+   └─ verify_struct.js
+
+
+五、当前已实现的后端框架
+------------------------
+
+1. stats 统计模块
+- 请求数
+- 成功数、警告数、错误数
+- 成功率
+- 平均延迟
+- 输入/输出 Token
+- 按平台 Token 拆分
+- 按平台费用拆分
+- 上行/下行流量
+- 1 小时、24 小时、7 天趋势数据
+- 聚合链路耗时
+- TOP API 排行榜
+- 每日快照骨架
+
+2. config 配置模块
+- 默认配置
+- JSON 配置文件读写
+- 路由 CRUD
+- 聚合 CRUD
+- 路由启停
+- 聚合启停
+- 配置导入、导出、重置
+- 字段与 PC/手机端 UI 对齐
+
+3. httpapi HTTP 接口层
+- 统一 JSON 返回格式
+- /api/stats
+- /api/config
+- /api/routes
+- /api/aggregates
+- /api/logs
+- /api/providers/{proto}/models
+- /api/test/route
+- /api/test/aggregate
+- SSE 流式测试骨架
+
+4. logs 日志模块
+- 内存环形日志
+- 日志级别过滤
+- 通道过滤
+- 关键词过滤
+- 分页查询
+- 清空日志
+- 导出文本
+- 手机端 lan/bt 通道映射骨架
+
+5. protocol 协议转换骨架
+- OpenAI
+- Anthropic / Claude
+- Google Gemini
+- 统一内部 ChatRequest 结构
+- 请求转换、响应转换、模型列表接口预留
+
+6. seed 演示数据
+- 仪表盘演示统计
+- 示例路由
+- 示例聚合
+- 示例日志
+- 用于首次联调时让页面显示非零数据
+
+说明：
+当前 seed 演示数据默认开启，正式运行时使用 -demo=false 关闭。
+
+
+六、GitHub Actions 云端编译
+---------------------------
+
+工作流文件：
+E:\API聚合\.github\workflows\build.yml
+
+触发方式：
+- push 到 main 或 master
+- 手动触发 workflow_dispatch
+- 推送 v* tag 时触发，并自动创建 GitHub Release
+
+云端执行内容：
+1. checkout 拉取代码
+2. setup-go 设置 Go 1.24
+3. 进入 网关后端 子目录
+4. 执行 go vet ./...
+5. 执行 go build ./...
+6. 交叉编译：
+   - Windows amd64：mobile-gateway.exe
+   - Linux amd64：mobile-gateway-linux-amd64
+   - Android arm64：mobile-gateway-android-arm64
+7. 上传 Artifacts
+
+注意：
+本地不再执行 go build 或 go test，权威编译验证完全交给 GitHub Actions。
+
+GitHub 仓库：
+https://github.com/shiqi3286-create/mobile-gateway
+
+Actions 页面：
+https://github.com/shiqi3286-create/mobile-gateway/actions
+
+产物下载：
+进入 Actions → 点击成功的 Build Gateway 运行记录 → 页面底部 Artifacts → 下载 mobile-gateway-binaries。
+
+
+七、Git 提交状态
+----------------
+
+已完成：
+- GitHub 仓库已创建
+- 仓库地址已配置
+- E:\API聚合 已初始化 git
+- 已提交 22 个文件
+- 已推送到 main 分支
+
+首个提交：
+96a090c Initial gateway backend and GitHub Actions build
+
+已配置远程地址：
+https://github.com/shiqi3286-create/mobile-gateway.git
+
+
+八、前端与后端对接计划
+----------------------
+
+第一闭环：仪表盘
+- 后端提供 GET /api/stats
+- PC HTML 通过 fetch('/api/stats?range=24h') 获取数据
+- 替换仪表盘硬编码 Token、费用、请求数、成功率、延迟、流量、趋势和日志
+- 点击刷新按钮重新请求接口
+- 手机首页使用相同接口渲染统计卡片和趋势图
+
+第二闭环：路由管理
+- GET /api/routes 渲染路由表/路由卡片
+- POST /api/routes 创建路由
+- PUT /api/routes/{id} 编辑路由
+- PATCH /api/routes/{id}/enabled 启停
+- DELETE /api/routes/{id} 删除
+- 多 API Key 使用加权轮询
+
+第三闭环：真实转发
+- http.ReverseProxy
+- 路径前缀匹配和通配符匹配
+- 超时和重试
+- QPS 限流
+- 代理过程写入 logs
+- 代理完成后调用 stats.Record
+
+第四闭环：AI 协议适配
+- OpenAI ↔ Anthropic
+- OpenAI ↔ Gemini
+- 请求与响应统一转换
+- 流式响应逐帧转换
+- /v1/models 和 /v1beta/models 模型拉取
+
+第五闭环：聚合编排
+- 并行执行
+- 串行执行
+- 步骤间数据传递
+- JSONPath 字段提取
+- mapping 字段映射
+- 聚合耗时和成功率统计
+- SSE 流式聚合输出
+
+第六闭环：Android 对接
+- Compose UI 或 WebView
+- ViewModel 管理状态
+- Retrofit 或 Ktor 调用 127.0.0.1:8080
+- 前台服务保持网关后台运行
+- Android ARM64 二进制或嵌入式 Go 方案
+- 热点模式、BLE、mDNS 和保活能力
+
+
+九、下一步建议
+--------------
+
+推荐优先顺序：
+
+1. 先等待 GitHub Actions 编译完成。
+2. 若编译失败，根据 Actions 日志修正 Go 代码。
+3. 编译成功后，继续把 PC 端仪表盘 HTML 接入真实 GET /api/stats。
+4. 增加静态文件托管，让 /admin 实际显示管理页面。
+5. 再实现路由管理 CRUD 与真实持久化。
+6. 最后实现 ReverseProxy、协议转换、聚合编排和 Android 前台服务。
+
+
+十、重要注意事项
+----------------
+
+1. 当前两个 UI HTML 仍是静态原型，尚未真正接入 fetch 或 SSE。
+2. 当前 Go 后端中的协议转换器和 ReverseProxy 仍是框架/占位阶段，不能当作生产网关使用。
+3. seed 演示数据只用于联调，正式环境应关闭。
+4. API Key 不应明文写入公开仓库；示例中的 Key 已脱敏。
+5. 正式部署时应启用 API Key 鉴权和 IP 白名单。
+6. `/api/*` 是管理接口命名空间，用户自定义路由应避免覆盖管理保留路径。
+7. 当前 GitHub Actions 是云端验证的唯一编译入口，本地只进行文件和结构检查。

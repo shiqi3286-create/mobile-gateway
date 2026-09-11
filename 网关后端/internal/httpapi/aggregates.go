@@ -93,9 +93,9 @@ func (h *Handler) handleAggregateByID(w http.ResponseWriter, r *http.Request) {
 }
 
 // aggFromMap 将前端 JSON 对象转为 config.Aggregate（两级序列化，字段名对齐）。
-func aggFromMap(m map[string]interface{}) *config.Aggregate {
+func aggFromMap(m map[string]interface{}) config.Aggregate {
 	data, _ := json.Marshal(m)
 	var a config.Aggregate
 	_ = json.Unmarshal(data, &a)
-	return &a
+	return a
 }
