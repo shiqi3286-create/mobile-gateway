@@ -51,8 +51,9 @@ class GatewayViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun stopGateway() {
-        val intent = Intent(getApplication<Context>(), GatewayForegroundService::class.java)
+        val application = getApplication<Application>()
+        val intent = Intent(application, GatewayForegroundService::class.java)
             .setAction(GatewayForegroundService.ACTION_STOP)
-        getApplication<Application>().startService(intent)
+        application.startService(intent)
     }
 }
