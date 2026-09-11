@@ -553,24 +553,31 @@ https://github.com/shiqi3286-create/mobile-gateway.git
 
 当前云端编译结果：
 - 工作流：聚合网关-安卓0.0
-- 运行编号：#3（对应提交 25f1cde）
-- 结论：SUCCESS ✅
+- 最新修正提交：6d31441
+- 结论：SUCCESS ✅（此前 25f1cde 也已成功）
 - Vet & Build：成功
 - Cross-compile binaries：成功
 - Upload artifacts：成功
 
 云端编译产物（Artifacts）：
 - 名称：聚合网关-安卓0.0
-- 大小：约 8.3 MB
 - 状态：未过期，可下载
 
-产物内容：
-- 聚合网关-安卓0.0-win.exe                (Windows amd64，PC 联调用)
-- 聚合网关-安卓0.0-linux-amd64        (Linux amd64)
-- 聚合网关-安卓0.0-arm64      (Android arm64)
+最新产物应包含三个文件：
+- 聚合网关-安卓0.0-arm64       (Android arm64 手机部署版)
+- 聚合网关-安卓0.0-win.exe     (Windows amd64 联调版)
+- 聚合网关-安卓0.0-linux-amd64 (Linux amd64 部署版)
+
+本地已确认的解压目录：
+E:\API聚合\聚合网关-安卓0.0
+
+目录内已确认存在：
+- 聚合网关-安卓0.0-arm64
+- 聚合网关-安卓0.0-win.exe
+- 聚合网关-安卓0.0-linux-amd64
 
 下载方式：
-进入仓库 Actions 页面 → 打开成功运行记录 → 页面底部 Artifacts → 下载 聚合网关-安卓0.0 → 解压。
+进入仓库 Actions 页面 → 打开最新成功运行记录 → 页面底部 Artifacts → 下载聚合网关-安卓0.0 → 解压。
 
 编译过程中修复的问题（重要记录）：
 1. stats.go：TopAPI.AvgMs 为 float64，avgMsLocked 返回 int64，已加 float64 转换。
@@ -589,76 +596,90 @@ https://github.com/shiqi3286-create/mobile-gateway.git
 
 
 
-八、前端与后端对接计划
-----------------------
+八、当前验证结果与最终 APK 方向
+------------------------------
 
-第一闭环：仪表盘
-- 后端提供 GET /api/stats
-- PC HTML 通过 fetch('/api/stats?range=24h') 获取数据
-- 替换仪表盘硬编码 Token、费用、请求数、成功率、延迟、流量、趋势和日志
-- 点击刷新按钮重新请求接口
-- 手机首页使用相同接口渲染统计卡片和趋势图
+已完成的 Windows 联调验证：
 
-第二闭环：路由管理
-- GET /api/routes 渲染路由表/路由卡片
-- POST /api/routes 创建路由
-- PUT /api/routes/{id} 编辑路由
-- PATCH /api/routes/{id}/enabled 启停
-- DELETE /api/routes/{id} 删除
-- 多 API Key 使用加权轮询
+1. 启动命令：
+   聚合网关-安卓0.0-win.exe -port 8080 -demo
 
-第三闭环：真实转发
-- http.ReverseProxy
-- 路径前缀匹配和通配符匹配
-- 超时和重试
-- QPS 限流
-- 代理过程写入 logs
-- 代理完成后调用 stats.Record
+2. GET /api/health：成功。
+   返回 code=0、message=ok、running=true、version=v0.9.1。
 
-第四闭环：AI 协议适配
-- OpenAI ↔ Anthropic
-- OpenAI ↔ Gemini
-- 请求与响应统一转换
-- 流式响应逐帧转换
-- /v1/models 和 /v1beta/models 模型拉取
+3. GET /api/stats?range=24h：成功。
+   已返回完整统计数据：
+   - gateway
+   - token
+   - real_time
+   - trend
+   - agg_stats
+   - error_dist
+   - traffic
+   - agg_latency
+   - top_apis
 
-第五闭环：聚合编排
-- 并行执行
-- 串行执行
-- 步骤间数据传递
-- JSONPath 字段提取
-- mapping 字段映射
-- 聚合耗时和成功率统计
-- SSE 流式聚合输出
+4. 当前运行状态：
+   - 监听地址：0.0.0.0:8080
+   - 本机验证地址：http://127.0.0.1:8080
+   - 演示数据：已启用（-demo）
+   - 当前 API 第一闭环：完成
 
-第六闭环：Android 对接
-- Compose UI 或 WebView
-- ViewModel 管理状态
-- Retrofit 或 Ktor 调用 127.0.0.1:8080
-- 前台服务保持网关后台运行
-- Android ARM64 二进制或嵌入式 Go 方案
-- 热点模式、BLE、mDNS 和保活能力
+重要说明：
+当前产物中的 Android 文件是 Android ARM64 独立二进制，不是 APK，不能直接点击安装。
+
+已确定的最终方向：
+跳过中间 UI/API 测试，直接继续制作可安装的 Android APK：
+
+聚合网关-安卓0.0.apk
+
+最终 APK 计划包含：
+- Android App 外壳
+- 手机端 WebView 或 Compose 界面
+- Android 前台服务
+- 启动/保活 Go 网关进程
+- 访问 127.0.0.1:8080
+- Android 网络权限
+- APK 云端编译与 Artifacts 上传
+
+最终目标产物：
+- 聚合网关-安卓0.0.apk
+- 聚合网关-安卓0.0-arm64
+- 聚合网关-安卓0.0-win.exe
+- 聚合网关-安卓0.0-linux-amd64
 
 
-九、下一步建议
---------------
+九、最终 APK 开发计划
+--------------------
+
+当前决定：
+不再继续做中间 PC 仪表盘联调，直接推进最终 Android APK 安装包。
+
+实施顺序：
+1. 创建 Android Gradle 工程。
+2. 接入手机端 UI（优先 WebView，复用 gateway-prototype.html）。
+3. 增加前台服务，保持网关进程后台运行。
+4. 集成或启动聚合网关 Android ARM64 二进制。
+5. 配置 INTERNET、前台服务和网络相关权限。
+6. APK 内访问 127.0.0.1:8080。
+7. 在 GitHub Actions 中增加 Android APK 云端构建。
+8. 上传最终 Artifact：聚合网关-安卓0.0.apk。
+9. 手机安装 APK，连接电脑热点后直接运行。
+
+目标文件：
+聚合网关-安卓0.0.apk
+
+APK 与二进制关系：
+- 聚合网关-安卓0.0.apk：手机可点击安装的最终应用
+- 聚合网关-安卓0.0-arm64：网关核心独立二进制，用于 APK 内部或调试
+- 聚合网关-安卓0.0-win.exe：Windows 联调辅助版
+- 聚合网关-安卓0.0-linux-amd64：Linux 辅助部署版
 
 已完成：
-1. GitHub Actions 云端编译通过。
-2. 已产出 Windows / Linux / Android 三个平台二进制。
-
-接下来推荐顺序：
-
-1. 下载 聚合网关-安卓0.0，解压得到 聚合网关-安卓0.0-win.exe。
-2. 在 PC 上运行 exe（默认 -demo 开启），验证 GET /api/stats 返回的 JSON 结构。
-3. 把 PC 端仪表盘 HTML 接入真实 GET /api/stats（替换硬编码数字）。
-4. 增加静态文件托管，让 /admin 实际显示管理页面（main.go 传入 -web 目录）。
-5. 实现路由管理 CRUD 的真实持久化联调。
-6. 实现 ReverseProxy 路由转发与超时重试。
-7. 实现 OpenAI / Anthropic / Gemini 协议转换与流式输出。
-8. 实现聚合编排（并行/串行、字段映射、SSE 打字机效果）。
-9. Android 端接入（Compose + ViewModel + Retrofit + 前台服务）。
-
+- GitHub Actions 云端编译通过
+- Windows / Linux / Android 三个平台二进制已生成
+- Windows 版 /api/health 验证成功
+- Windows 版 /api/stats?range=24h 验证成功
 
 
 十、重要注意事项
