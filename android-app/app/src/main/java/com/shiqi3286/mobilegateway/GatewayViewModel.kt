@@ -1,7 +1,6 @@
 package com.shiqi3286.mobilegateway
 
 import android.app.Application
-import android.content.Context
 import android.content.Intent
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
@@ -45,9 +44,10 @@ class GatewayViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun startGateway() {
-        val intent = Intent(getApplication<Context>(), GatewayForegroundService::class.java)
+        val application = getApplication<Application>()
+        val intent = Intent(application, GatewayForegroundService::class.java)
             .setAction(GatewayForegroundService.ACTION_START)
-        ContextCompat.startForegroundService(getApplication(), intent)
+        ContextCompat.startForegroundService(application, intent)
     }
 
     fun stopGateway() {

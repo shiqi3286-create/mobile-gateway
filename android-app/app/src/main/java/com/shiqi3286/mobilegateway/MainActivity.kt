@@ -67,18 +67,22 @@ private fun GatewayApp(vm: GatewayViewModel = viewModel()) {
                 }
             }
             if (running) {
-                AndroidView(
-                    modifier = Modifier.fillMaxWidth().weight(1f),
-                    factory = { context ->
-                        WebView(context).apply {
-                            settings.javaScriptEnabled = true
-                            settings.domStorageEnabled = true
-                            webViewClient = WebViewClient()
-                            loadUrl(state.localUrl)
+                Column(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                    AndroidView(
+                        modifier = Modifier.fillMaxSize(),
+                        factory = { context ->
+                            WebView(context).apply {
+                                settings.javaScriptEnabled = true
+                                settings.domStorageEnabled = true
+                                webViewClient = WebViewClient()
+                                loadUrl(state.localUrl)
+                            }
+                        },
+                        update = { webView ->
+                            if (webView.url != state.localUrl) webView.loadUrl(state.localUrl)
                         }
-                    },
-                    update = { webView -> if (webView.url != state.localUrl) webView.loadUrl(state.localUrl) }
-                )
+                    )
+                }
             } else {
                 Text("启动网关后，管理界面将在这里打开。", modifier = Modifier.padding(top = 24.dp))
             }
