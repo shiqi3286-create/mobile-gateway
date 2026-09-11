@@ -649,46 +649,94 @@ E:\API聚合\聚合网关-安卓0.0
 - 聚合网关-安卓0.0-linux-amd64
 
 
-九、最终 APK 开发计划
---------------------
+九、最终 APK 开发计划与当前实现状态
+------------------------------------
 
 当前决定：
 不再继续做中间 PC 仪表盘联调，直接推进最终 Android APK 安装包。
 
-实施顺序：
-1. 创建 Android Gradle 工程。
-2. 接入手机端 UI（优先 WebView，复用 gateway-prototype.html）。
-3. 增加前台服务，保持网关进程后台运行。
-4. 集成或启动聚合网关 Android ARM64 二进制。
-5. 配置 INTERNET、前台服务和网络相关权限。
-6. APK 内访问 127.0.0.1:8080。
-7. 在 GitHub Actions 中增加 Android APK 云端构建。
-8. 上传最终 Artifact：聚合网关-安卓0.0.apk。
-9. 手机安装 APK，连接电脑热点后直接运行。
+已完成：
+1. Android Gradle 工程已创建。
+2. Compose 主界面已创建。
+3. WebView 已配置，目标地址为 http://127.0.0.1:8080/admin。
+4. GatewayForegroundService 已创建。
+5. GatewayProcessManager 已创建。
+6. APK 内置 HTML 与 Android ARM64 Go 网关二进制的 Actions 传递链路已创建。
+7. Go /admin 静态页面入口已补齐。
+8. GitHub Actions Android APK Job 已创建。
+
+当前 APK 运行链路：
+App 启动 → 前台服务 → Android 原生库目录中的 libgateway.so →
+Go 网关监听 8080 → /api/health 就绪 → WebView 加载 /admin。
 
 目标文件：
 聚合网关-安卓0.0.apk
 
 APK 与二进制关系：
 - 聚合网关-安卓0.0.apk：手机可点击安装的最终应用
-- 聚合网关-安卓0.0-arm64：网关核心独立二进制，用于 APK 内部或调试
+- 聚合网关-安卓0.0-arm64：网关核心独立二进制，用于 APK 构建输入或调试
 - 聚合网关-安卓0.0-win.exe：Windows 联调辅助版
 - 聚合网关-安卓0.0-linux-amd64：Linux 辅助部署版
 
-已完成：
-- GitHub Actions 云端编译通过
-- Windows / Linux / Android 三个平台二进制已生成
-- Windows 版 /api/health 验证成功
-- Windows 版 /api/stats?range=24h 验证成功
+
+十、Android Permission denied 修复记录
+--------------------------------------
+
+问题表现：
+手机启动网关时报：
+Cannot run program .../files/gateway/聚合网关-安卓0.0-arm64: error=13, Permission denied
+
+初始方案：
+- 从 assets 复制中文文件名二进制到 files/gateway/
+- 调用 setExecutable / chmod
+
+最终采用方案：伪装原生库（jniLibs）。
+
+具体修改：
+1. app/build.gradle.kts 增加：
+   sourceSets["main"].jniLibs.srcDirs("src/main/jniLibs")
+
+2. GitHub Actions 构建 APK 时：
+   - 下载 Go Android ARM64 二进制
+   - 复制到 app/src/main/jniLibs/arm64-v8a/libgateway.so
+   - 设置 chmod 755
+
+3. Android 启动时不再从 assets 复制二进制，也不再使用中文路径。
+
+4. GatewayProcessManager 使用：
+   val nativeDir = context.applicationInfo.nativeLibraryDir
+   val execFile = File(nativeDir, "libgateway.so")
+
+5. ProcessBuilder 使用 execFile.absolutePath 启动，并将 filesDir 作为工作目录。
+
+修复提交：
+97229fa Package Android gateway as executable native library
+
+这样 Android 系统负责将原生库解包到 nativeLibraryDir，避免普通 assets/files 目录执行权限受限。
 
 
-十、重要注意事项
-----------------
+十一、当前仍需云端验证的内容
+----------------------------
 
-1. 当前两个 UI HTML 仍是静态原型，尚未真正接入 fetch 或 SSE。
+等待提交 97229fa 对应的 GitHub Actions 运行完成，重点检查：
+
+1. Build gateway binaries：成功
+2. Build Android APK：成功
+3. Artifacts 出现：聚合网关-安卓0.0-apk
+4. 下载并安装：聚合网关-安卓0.0.apk
+5. 手机上点击“启动网关”后不再出现 error=13 Permission denied
+6. WebView 能打开 http://127.0.0.1:8080/admin
+
+
+十二、重要注意事项
+------------------
+
+1. 当前两个 UI HTML 仍是静态原型，尚未真正接入完整 fetch 或 SSE。
 2. 当前 Go 后端中的协议转换器和 ReverseProxy 仍是框架/占位阶段，不能当作生产网关使用。
 3. seed 演示数据只用于联调，正式环境应关闭。
 4. API Key 不应明文写入公开仓库；示例中的 Key 已脱敏。
 5. 正式部署时应启用 API Key 鉴权和 IP 白名单。
 6. `/api/*` 是管理接口命名空间，用户自定义路由应避免覆盖管理保留路径。
 7. 当前 GitHub Actions 是云端验证的唯一编译入口，本地只进行文件和结构检查。
+8. Android ARM64 二进制必须与目标手机架构匹配；大多数现代 Android 手机为 arm64-v8a。
+
