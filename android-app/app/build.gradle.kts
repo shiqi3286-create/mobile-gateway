@@ -10,6 +10,13 @@ android {
 
     sourceSets["main"].jniLibs.srcDirs("src/main/jniLibs")
 
+    packaging {
+        jniLibs {
+            // 关键配置：强制将 .so 传统解压到磁盘，杜绝仅按压缩包映射而无法物理执行的文件。
+            useLegacyPackaging = true
+        }
+    }
+
     defaultConfig {
         applicationId = "com.shiqi3286.mobilegateway"
         minSdk = 27

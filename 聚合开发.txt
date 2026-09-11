@@ -740,3 +740,70 @@ Cannot run program .../files/gateway/聚合网关-安卓0.0-arm64: error=13, Per
 7. 当前 GitHub Actions 是云端验证的唯一编译入口，本地只进行文件和结构检查。
 8. Android ARM64 二进制必须与目标手机架构匹配；大多数现代 Android 手机为 arm64-v8a。
 
+
+十三、Permission denied 根因分析与方案决策（重要）
+--------------------------------------------------
+
+仓库：https://github.com/shiqi3286-create/mobile-gateway
+本地目录：E:\API聚合
+
+1. 当前问题现状
+   - 伪装 libgateway.so（提交 97229fa）方案在手机上仍报 Permission denied。
+   - 判断：仅把二进制放进 jniLibs 并不能保证可执行，Android 10+ 限制的是从
+     应用可写私有目录直接执行程序，而非仅仅二进制本体。
+
+2. 根因分析
+   - Android 10（API 29）起，对 targetSdk >= 29 的应用执行加限：不允许执行
+     应用私有可写目录（如 filesDir/runtime/）中的可执行文件。
+   - 因此若把 Termux 快照解压到 filesDir/runtime/ 再执行 runtime/bin/bash，
+     大概率会再次遇到与 gateway 相同的 Permission denied。
+   - bash、gateway-arm64 是否被允许执行，取决于“目标目录的 SELinux 标签与
+     应用 domain 的执行权限”，而不取决于是否包了 Termux。
+
+3. 三个待确认方案
+   - 方案 A（推荐，改动小）：targetSdk 35 + nativeLibraryDir 执行
+     * 可执行文件放入 jniLibs/arm64-v8a/
+     * 明确 android:extractNativeLibs="true"（或 Gradle useLegacyPackaging=true）
+     * 从 applicationInfo.nativeLibraryDir 取 libgateway.so 执行
+     * 运行时数据/配置/HTML 仍在 filesDir
+   - 方案 B（兼容 Termux 快照）：targetSdk <= 28 + filesDir/runtime/bin/bash 执行
+     * 接近 Termux 自身执行模型
+     * 代价：新版 Android 兼容性、前台服务行为、部分商店政策
+   - 方案 C（不建议）：targetSdk 35 + filesDir/runtime/bin/bash 执行
+     * 极可能继续 Permission denied，不解决根本问题
+
+   决策优先级：先评估方案 A；确认不可行后再考虑降 targetSdk 或其它受支持机制。
+
+4. 风险点清单
+   a) extractNativeLibs 风险：build.gradle.kts 已配置 jniLibs.srcDirs，但 manifest
+      未设 android:extractNativeLibs="true"，也未设 useLegacyPackaging=true，
+      可能未真正解包到 nativeLibraryDir，或解包后权限/路径不符预期。
+   b) targetSdk 35 相关限制：私有目录执行、前台服务类型、Android 14/15 前台服务
+      启动限制、WebView 明文 HTTP 策略、通知权限。若降 targetSdk 28 需单独评估。
+   c) 快照制作工具链未定：本机无 Go / Java / xz，tar.exe 存在，Node 存在。
+      tar.xz 很可能只能在 GitHub Actions 制作，或复用已有 Termux/Android 构建环境。
+   d) Actions artifact 权限风险：确认上传/下载后 ELF 架构正确、执行权限保留、
+      tar.xz 内权限位保留、解压工具不强制改写权限。
+   e) Go 产物平台需确认：当前用 CGO_ENABLED=0 GOOS=android GOARCH=arm64，需验证
+      产物在目标手机架构上可直接运行（ELF 64-bit / AArch64 / 正确 ABI）。
+   f) WebView 仅加载静态原型：assets 中放的是手机界面设计/gateway-prototype.html，
+      是静态前端，未接真实 fetch/SSE；后端正常也不代表页面真实刷新接口。
+   g) watchdog 重启竞态：用户启动、服务自动重启、watchdog 重启、用户停止、
+      onDestroy 清理需统一状态机与锁，否则可能同时起多个进程 → bind 8080 冲突。
+
+5. 若按 Termux 快照方案改造涉及的改动面（待方案确认后再动手）
+   - 修改：app/build.gradle.kts、AndroidManifest.xml、
+     GatewayProcessManager.kt、GatewayForegroundService.kt、
+     GatewayViewModel.kt、GatewayUiState.kt、.github/workflows/build.yml
+   - 新增：app/src/main/assets/snapshot.tar.xz、
+     RuntimeSnapshotManager.kt、GatewayWatchdog.kt、
+     res/xml/network_security_config.xml（可选，本机回环明文策略）、
+     assets/.snapshot-version（可选，快照版本判断）
+
+   说明：以上作为记录，不代表已决定采用该方案；具体目录结构需以参考项目的实际
+   snapshot.tar.xz 结构为准，不能仅按名称假设。
+
+6. 待办
+   - 先尝试方案 A：加 extractNativeLibs=true / useLegacyPackaging=true，验证是否可执行。
+   - 若 A 仍 Perm后，再评估方案 B（降 targetSdk 并引入 Termux 快照）或其它受支持机制。
+

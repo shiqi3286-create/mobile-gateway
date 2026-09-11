@@ -82,6 +82,13 @@ jobs:
           unzip -q /tmp/gradle.zip -d /tmp
           /tmp/gradle-8.10.2/bin/gradle -p android-app wrapper --gradle-version 8.10.2 --distribution-type bin
           chmod +x android-app/gradlew
+      - name: Verify gateway native library staged
+        shell: bash
+        run: |
+          LIB="android-app/app/src/main/jniLibs/arm64-v8a/libgateway.so"
+          ls -la "$LIB"
+          file "$LIB" || true
+          test -s "$LIB" || { echo "ERROR: libgateway.so is empty or missing"; exit 1; }
       - name: Build debug APK
         working-directory: android-app
         run: ./gradlew assembleDebug --no-daemon --stacktrace

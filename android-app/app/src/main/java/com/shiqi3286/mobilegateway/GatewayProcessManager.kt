@@ -16,6 +16,7 @@ class GatewayProcessManager(private val context: Context) {
     companion object {
         private const val HTML_ASSET = "gateway-prototype.html"
         private const val PORT = 8080
+        private const val TAG = "GatewayProcess"
     }
 
     private var process: Process? = null
@@ -23,30 +24,42 @@ class GatewayProcessManager(private val context: Context) {
     suspend fun start(): Boolean = withContext(Dispatchers.IO) {
         if (process?.isAlive == true) return@withContext waitUntilReady()
 
-        val gatewayDir = File(context.filesDir, "gateway").apply { mkdirs() }
         val webDir = File(context.filesDir, "web").apply { mkdirs() }
         val dataDir = File(context.filesDir, "data").apply { mkdirs() }
-        val execFile = File(context.applicationInfo.nativeLibraryDir, "libgateway.so")
 
-        if (!execFile.exists()) {
-            throw IllegalStateException("找不到 APK 原生库中的网关二进制: ${execFile.absolutePath}")
+        // 原生库必须真实解压到本机；仅靠压缩包内映射无法物理执行。
+        val execFile = File(context.applicationInfo.nativeLibraryDir, "libgateway.so")
+        android.util.Log.i(TAG, "nativeLibraryDir=${context.applicationInfo.nativeLibraryDir}")
+        android.util.Log.i(TAG, "execFile=${execFile.absolutePath} exists=${execFile.exists()} canExecute=${execFile.canExecute()}")
+        if (!execFile.exists() || !execFile.canExecute()) {
+            android.util.Log.e(TAG, "原生库网关二进制缺失或不可执行: ${execFile.absolutePath} exists=${execFile.exists()} canExecute=${execFile.canExecute()}")
+            throw IllegalStateException(
+                "找不到或不可执行 APK 原生库中的网关二进制: ${execFile.absolutePath} " +
+                        "(exists=${execFile.exists()}, canExecute=${execFile.canExecute()})"
+            )
         }
         copyAssetIfChanged(HTML_ASSET, File(webDir, "index.html"))
 
-        process = ProcessBuilder(
-            execFile.absolutePath,
-            "-port", PORT.toString(),
-            "-data", dataDir.absolutePath,
-            "-web", webDir.absolutePath,
-            "-demo=false"
-        ).directory(context.filesDir)
-            .redirectErrorStream(true)
-            .start()
+        try {
+            android.util.Log.i(TAG, "启动网关：workingDir=${context.filesDir.absolutePath} cmd=${execFile.absolutePath}")
+            process = ProcessBuilder(
+                execFile.absolutePath,
+                "-port", PORT.toString(),
+                "-data", dataDir.absolutePath,
+                "-web", webDir.absolutePath,
+                "-demo=false"
+            ).directory(context.filesDir)
+                .redirectErrorStream(true)
+                .start()
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "启动网关进程失败: ${e.message}", e)
+            throw e
+        }
 
         // 持续消费 Go 日志，避免 stdout 管道缓冲区满导致子进程阻塞。
         Thread {
             process?.inputStream?.bufferedReader()?.useLines { lines ->
-                lines.forEach { line -> android.util.Log.i("GatewayProcess", line) }
+                lines.forEach { line -> android.util.Log.i(TAG, line) }
             }
         }.start()
 
