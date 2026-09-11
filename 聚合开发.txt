@@ -519,9 +519,9 @@ E:\API聚合\.github\workflows\build.yml
 4. 执行 go vet ./...
 5. 执行 go build ./...
 6. 交叉编译：
-   - Windows amd64：mobile-gateway.exe
-   - Linux amd64：mobile-gateway-linux-amd64
-   - Android arm64：mobile-gateway-android-arm64
+   - Windows amd64：聚合网关-安卓0.0-win.exe
+   - Linux amd64：聚合网关-安卓0.0-linux-amd64
+   - Android arm64：聚合网关-安卓0.0-arm64
 7. 上传 Artifacts
 
 注意：
@@ -534,7 +534,7 @@ Actions 页面：
 https://github.com/shiqi3286-create/mobile-gateway/actions
 
 产物下载：
-进入 Actions → 点击成功的 Build Gateway 运行记录 → 页面底部 Artifacts → 下载 mobile-gateway-binaries。
+进入 Actions → 点击成功的 Build Gateway 运行记录 → 页面底部 Artifacts → 下载 聚合网关-安卓0.0。
 
 
 七、Git 提交与云端编译状态
@@ -552,7 +552,7 @@ https://github.com/shiqi3286-create/mobile-gateway.git
 3. 25f1cde  Fix float/int mismatch and unify module wiring to prevent type mismatches
 
 当前云端编译结果：
-- 工作流：Build Gateway (Windows exe)
+- 工作流：聚合网关-安卓0.0
 - 运行编号：#3（对应提交 25f1cde）
 - 结论：SUCCESS ✅
 - Vet & Build：成功
@@ -560,17 +560,17 @@ https://github.com/shiqi3286-create/mobile-gateway.git
 - Upload artifacts：成功
 
 云端编译产物（Artifacts）：
-- 名称：mobile-gateway-binaries
+- 名称：聚合网关-安卓0.0
 - 大小：约 8.3 MB
 - 状态：未过期，可下载
 
 产物内容：
-- mobile-gateway.exe                (Windows amd64，PC 联调用)
-- mobile-gateway-linux-amd64        (Linux amd64)
-- mobile-gateway-android-arm64      (Android arm64)
+- 聚合网关-安卓0.0-win.exe                (Windows amd64，PC 联调用)
+- 聚合网关-安卓0.0-linux-amd64        (Linux amd64)
+- 聚合网关-安卓0.0-arm64      (Android arm64)
 
 下载方式：
-进入仓库 Actions 页面 → 打开成功运行记录 → 页面底部 Artifacts → 下载 mobile-gateway-binaries → 解压。
+进入仓库 Actions 页面 → 打开成功运行记录 → 页面底部 Artifacts → 下载 聚合网关-安卓0.0 → 解压。
 
 编译过程中修复的问题（重要记录）：
 1. stats.go：TopAPI.AvgMs 为 float64，avgMsLocked 返回 int64，已加 float64 转换。
@@ -649,7 +649,7 @@ https://github.com/shiqi3286-create/mobile-gateway.git
 
 接下来推荐顺序：
 
-1. 下载 mobile-gateway-binaries，解压得到 mobile-gateway.exe。
+1. 下载 聚合网关-安卓0.0，解压得到 聚合网关-安卓0.0-win.exe。
 2. 在 PC 上运行 exe（默认 -demo 开启），验证 GET /api/stats 返回的 JSON 结构。
 3. 把 PC 端仪表盘 HTML 接入真实 GET /api/stats（替换硬编码数字）。
 4. 增加静态文件托管，让 /admin 实际显示管理页面（main.go 传入 -web 目录）。

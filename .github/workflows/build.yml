@@ -1,4 +1,4 @@
-name: Build Gateway (Windows exe)
+name: 聚合网关-安卓0.0
 
 # 触发条件：
 #   1. push 到 main / master 分支
@@ -51,17 +51,15 @@ jobs:
       - name: Cross-compile binaries
         run: |
           mkdir -p dist
-          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o dist/mobile-gateway.exe .
+          CGO_ENABLED=0 GOOS=android GOARCH=arm64 go build -trimpath -ldflags "-s -w" -o dist/聚合网关-安卓0.0-arm64 .
           CGO_ENABLED=0 GOOS=linux   GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o dist/mobile-gateway-linux-amd64 .
-          # 可选：Android ARM64（CGO 关闭，仅含标准库；后续作为 App 内嵌二进制）
-          CGO_ENABLED=0 GOOS=android GOARCH=arm64 go build -trimpath -ldflags "-s -w" -o dist/mobile-gateway-android-arm64 .
 
       # 6) 上传编译产物（Actions 页面 → 本次运行的 Artifacts 区域下载）
       #    注意：path 相对仓库根目录，所以带 网关后端/ 前缀
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: mobile-gateway-binaries
+          name: 聚合网关-安卓0.0
           path: 网关后端/dist/
 
       # 7) 若是打了 tag（v*），额外发布一个 GitHub Release，附上 exe
@@ -69,5 +67,5 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: 网关后端/dist/mobile-gateway.exe
+          files: 网关后端/dist/聚合网关-安卓0.0-arm64
           generate_release_notes: true
