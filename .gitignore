@@ -17,3 +17,5 @@ Thumbs.db
 
 # ---- Node 调试脚本临时文件 ----
 网关后端/scripts/*_dbg.js
+mobile-gateway-binaries/
+*.zip
