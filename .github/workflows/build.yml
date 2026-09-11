@@ -70,10 +70,11 @@ jobs:
       - name: Stage Android assets
         shell: bash
         run: |
-          mkdir -p android-app/app/src/main/assets
+          mkdir -p android-app/app/src/main/assets android-app/app/src/main/jniLibs/arm64-v8a
           cp "手机界面设计/gateway-prototype.html" android-app/app/src/main/assets/gateway-prototype.html
-          cp "downloaded-gateway/聚合网关-安卓0.0-arm64" android-app/app/src/main/assets/聚合网关-安卓0.0-arm64
-          chmod 700 android-app/app/src/main/assets/聚合网关-安卓0.0-arm64
+          # 将 Android ELF 伪装为原生库，使系统解包到 nativeLibraryDir 并保留可执行权限。
+          cp "downloaded-gateway/聚合网关-安卓0.0-arm64" android-app/app/src/main/jniLibs/arm64-v8a/libgateway.so
+          chmod 755 android-app/app/src/main/jniLibs/arm64-v8a/libgateway.so
       - name: Install Gradle and generate wrapper
         shell: bash
         run: |

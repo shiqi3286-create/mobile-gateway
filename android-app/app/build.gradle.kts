@@ -8,6 +8,8 @@ android {
     namespace = "com.shiqi3286.mobilegateway"
     compileSdk = 35
 
+    sourceSets["main"].jniLibs.srcDirs("src/main/jniLibs")
+
     defaultConfig {
         applicationId = "com.shiqi3286.mobilegateway"
         minSdk = 27

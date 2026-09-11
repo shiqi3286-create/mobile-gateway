@@ -25,3 +25,4 @@ android-app/.gradle/
 android-app/app/build/
 android-app/gradle/wrapper/gradle-wrapper.jar
 聚合网关-安卓0.0/
+android-app/app/src/main/jniLibs/arm64-v8a/libgateway.so
